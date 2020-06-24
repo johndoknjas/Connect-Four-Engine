@@ -13,7 +13,7 @@ Because of the size I couldn't directly upload it here.
 
   1) Open the command prompt and go to /bin/Debug. If you don't have pyinstaller, install it with "pip install pyinstaller".
      Then type "pyinstaller interface.py" - we're only interested in the dist/interface directory that gets created.
-     In /bin/Debug, copy and following files (and paste them into /dist/interface): 
+     In /bin/Debug, copy the following files (and paste them into /dist/interface): 
      directory.txt, error_effect.wav, move_effect.wav, OngoingScore.txt, second_move_effect.wav, signal.txt, and
      Version 1 - April 25, 2018.exe.
      
