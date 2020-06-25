@@ -27,6 +27,9 @@
         
         # Think of any other ways the engine might be losing some of its
         # computational power to other processes.
+            # In the while loop of pygame_stuff, it looks like not much
+            # computational power if being used. The visual display is only
+            # updated when something changes/happens, so it's not continuous.
 
 # Bugs:
 
@@ -259,7 +262,7 @@ def quit_procedure_from_pygame():
     os._exit(0) # Should get this thread here, as well as the main thread,
                 # to finish.
 
-def update_pygame_board(line_width, circle_diameter, screen):
+def update_pygame_board(line_width_plus_radius, circle_radius, screen):
     global pieces_to_display
     
     current_iteration = 0
@@ -268,11 +271,11 @@ def update_pygame_board(line_width, circle_diameter, screen):
             x_coor = 0
             y_coor = 0
             
-            x_coor = (c+1) * line_width
-            x_coor += c * circle_diameter
+            x_coor = (c+1) * line_width_plus_radius
+            x_coor += c * circle_radius
             
-            y_coor = (r+1) * line_width
-            y_coor += r * circle_diameter
+            y_coor = (r+1) * line_width_plus_radius
+            y_coor += r * circle_radius
             
             rgb_values = (210,210,210)
             
@@ -282,7 +285,7 @@ def update_pygame_board(line_width, circle_diameter, screen):
                 rgb_values = (225,225,0)
             
             pygame.draw.circle(screen, rgb_values, (x_coor, y_coor), 
-                               circle_diameter, 0)
+                               circle_radius, 0)
             
             current_iteration += 1
     
@@ -349,33 +352,34 @@ def pygame_stuff(placeholder):
     pygame.display.set_caption("Connect Four AI")
     
     screen.fill((0, 0, 255))
-
-    button_width = 132.857
+    
+    line_width_plus_radius = round(60 * factor)
+    circle_radius = round(45 * factor)
+    
+    minimized_line_width_plus_radius = round(55 * factor)
+    minimized_circle_radius = round(41 * factor)
+    
+    #normal_button_width = 119.5714286
     button_height = 799.8
     
     buttons = []
     
     for i in range(7):
-        buttons.append(pygame.Rect(i * button_width, 0, button_width, button_height))
-    
-    line_width = round(60 * factor)
-    circle_diameter = round(45 * factor)
-    
-    minimized_line_width = round(55 * factor)
-    minimized_circle_diameter = round(41 * factor)
-    
+        buttons.append(pygame.Rect((i+1)*line_width_plus_radius + (i-1)*circle_radius, 
+                                   0, 2*circle_radius, button_height))
+            
     #for r in range(6):
     #    for c in range(7):
     #        x_coor = 0
     #        y_coor = 0
             
-    #        x_coor = (c+1) * line_width
-    #        x_coor += c * circle_diameter
+    #        x_coor = (c+1) * line_width_plus_radius
+    #        x_coor += c * circle_radius
             
-    #        y_coor = (r+1) * line_width
-    #        y_coor += r * circle_diameter
+    #        y_coor = (r+1) * line_width_plus_radius
+    #        y_coor += r * circle_radius
             
-    #        pygame.draw.circle(screen, (210,210,210), (x_coor, y_coor), circle_diameter, 0)
+    #        pygame.draw.circle(screen, (210,210,210), (x_coor, y_coor), circle_radius, 0)
             
     pygame.display.update()
     
@@ -563,7 +567,7 @@ def pygame_stuff(placeholder):
                 screen.fill((0, 0, 255))
                 pygame.display.update()
                 just_minimized_pygame_board = True
-                update_pygame_board(minimized_line_width, minimized_circle_diameter, screen)
+                update_pygame_board(minimized_line_width_plus_radius, minimized_circle_radius, screen)
             
             if not(displayed_text_prompt_data_3):
             
@@ -653,7 +657,7 @@ def pygame_stuff(placeholder):
                 
                 # use int values in pieces_to_display to display red, yellow, empty.
                 
-                update_pygame_board(line_width, circle_diameter, screen)
+                update_pygame_board(line_width_plus_radius, circle_radius, screen)
                 
                 updating_pygame_display = False
                 
@@ -682,22 +686,22 @@ def pygame_stuff(placeholder):
                 #elif event.type == VIDEORESIZE:
                 
                 elif event.type == pygame.MOUSEBUTTONDOWN and enable_GUI_buttons and is_user_turn:                
-                    index_of_column_chosen = -1
+                    index_of_column_chosen = None
                     
                     mouse_pos = event.pos
+                    
+                    if len(buttons) != 7:
+                        raise Exception("The size of the buttons list isn't 7.")
                     
                     for i in range(len(buttons)):
                         if (buttons[i].collidepoint(mouse_pos)):
                             # So, the user clicked on buttons[i].
-                            index_of_column_chosen = i                     
+                            index_of_column_chosen = i
                             break
-                    
-                    if index_of_column_chosen < 0 or index_of_column_chosen > 6:
-                        raise Exception("No column chosen after pressing a button.")
                     
                     # Check if this move is valid:
                     
-                    if is_column_legal(index_of_column_chosen):
+                    if index_of_column_chosen != None and is_column_legal(index_of_column_chosen):
                         # It is legal - proceed with the move.
                         # CONTINUE HERE.
                         # Also, don't get the C++ to send data back, saying whether
