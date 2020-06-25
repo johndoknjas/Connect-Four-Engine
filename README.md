@@ -17,7 +17,7 @@ Because of the size I couldn't directly upload it here.
      directory.txt, error_effect.wav, move_effect.wav, OngoingScore.txt, second_move_effect.wav, signal.txt, and
      Version 1 - April 25, 2018.exe.
      
-  2) Or, you can download the dist folder here: https://drive.google.com/drive/folders/1Sg3ngdTuro5F_YEK4QJoyHagDNzXj1Ud?usp=sharing
+  2) Or, you can download the dist folder here: https://drive.google.com/drive/folders/1o3rtGn-gOKd7RU8V7KG-VeTIGdczPheB?usp=sharing
   
  After doing either of these options, go into /dist/interface, and open up the directory.txt file. Replace the line in it with the absolute
  directory of where you downloaded the database on to your computer.
