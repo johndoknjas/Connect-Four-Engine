@@ -1,6 +1,7 @@
-# Only use this makefile if you want to play around with changing the C++ code and are compiling via the command line (e.g., the Linux terminal). For just using the application
-# normally, everything is already compiled and all you have to do is open and run the interface.exe program in /bin/Debug/dist
-# (after using pyinstaller on interface.py, or by downloading the dist folder from Google Docs).
+# Only use this makefile if you want to play around with changing the C++ code and are compiling via the command line 
+# (e.g., the Linux terminal). For just using the application normally as a user, everything is already compiled and all you have 
+# to do is open and run the interface.exe program in /bin/Debug/dist (after using pyinstaller on interface.py, or by 
+# downloading the dist folder from Google Docs).
 
 # Modify this variable to add source files:
 SOURCES += notes
