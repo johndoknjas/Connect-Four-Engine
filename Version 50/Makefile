@@ -11,6 +11,16 @@ BIN_DIR = bin/Debug
 OBJ_DIR = obj/Debug
 OBJ_FILES = $(addprefix ${OBJ_DIR}/,$(addsuffix .o,$(SOURCES)))
 
+# Targets:
+.PHONY: clean default all
+default: all
+all: $(BIN_DIR)/connect4
+
+# Executables:
+$(BIN_DIR)/connect4: $(OBJ_FILES)
+	mkdir -p ${BIN_DIR}
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS)
+	
 # Objects:
 $(OBJ_DIR)/sqlite3.o: sqlite3.c
 	mkdir -p ${OBJ_DIR}
@@ -20,8 +30,7 @@ $(OBJ_DIR)/%.o: %.cpp
 	mkdir -p ${OBJ_DIR}
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
-# Executables:
-$(BIN_DIR)/connect4: $(OBJ_FILES)
-	mkdir -p ${BIN_DIR}
-	$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS)
-	
+# Clean:
+clean:
+	rm ${BIN_DIR}/connect4
+	rm $(OBJ_FILES)
