@@ -1,5 +1,17 @@
 /* Version 50
 
+- Replace std::vector with std::array, where applicable.
+- Get rid of the future_positions_size int variable (not used anywhere).
+- Try to avoid using the heap, ideally everywhere (maybe this is possible?). Whenever a unique pointer/shared pointer is declared, the heap is being used.
+  For passing parameters to the 3rd constructor (recursively), passing a std::array (or a pointer to the std::array) should
+  work, and allow modifications to the original if desired.
+
+
+
+----------------------------------------------------------------------------
+Jan 2022 onward stuff above this line.
+
+
 - Make it so that all the user's input is done via pygame (either with all buttons or
   some text entry in pygame). No input should be done via console anymore.
     - Note: the default time for the engine to think will be 1.0s.
