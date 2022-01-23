@@ -5,6 +5,9 @@
 - Try to avoid using the heap, ideally everywhere (maybe this is possible?). Whenever a unique pointer/shared pointer is declared, the heap is being used.
   For passing parameters to the 3rd constructor (recursively), passing a std::array (or a pointer to the std::array) should
   work, and allow modifications to the original if desired.
+     - Note: Actually, only using the stack could cause a stack overflow. So maybe using the heap is needed.
+     - But still try to replace std::vector with std::array, since the elements in std::array should be stored on the stack,
+       even if the std::array pointer variable is on the heap (I think?).
 
 
 
@@ -375,7 +378,7 @@ Jan 2022 onward stuff above this line.
             - Actually, even when depth limit was used for thinking, quiescence search sometimes/often caused the search to go further.
             - So even then, giving the side to move a small amount (like +/- 5 or something) would have been useful.
 
-      -	For a stacked threat of two 3-in-a-rows above the opponent’s own amplifying square for a 3-in-a-row,
+      -	For a stacked threat of two 3-in-a-rows above the opponentÂ’s own amplifying square for a 3-in-a-row,
             ensure the two groups have equal value, if you can!
 
             -	The group of two above should NOT be worth more.
