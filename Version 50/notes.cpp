@@ -1,6 +1,40 @@
 /* Version 50
 
-- Replace std::vector with std::array, where applicable.
+- Get rid of 2D vectors, as accessing elements in them is relatively inefficient. Replace with 1D vectors or
+  1D arrays. E.g., the 2D vector<vector<char>> board should be a one dimensional list, and it can easily represent
+  a 2D board. Also the hash_values_of_squares_with_C can be a 1D array, and this should help since they get
+  accessed by the third constructor. Also the board_of_squares_winning_for_player/comp should be 1D.
+     - For storing 2D vectors (that represented a board) as 1D, decide whether you want them to look like this:
+       [R1C1, R1C2, R1C3,...., R2C1, R2C2, etc] or
+       [C1R1, C1R2, C1R3,...., C2R1, C2R2, etc].
+       Shouldn't matter much since the array is only 42 elements, but maybe making elements that are used more often together
+       be closer in the array could be very slightly beneficial? So it depends on whether you think a piece being played
+       in a square means it's more likely for that square's column or row to be used subsequently in the program's run.
+
+      - May be tricky to implement the TT as a 1D array/vector, since the bucket sizes are variable. But consider
+        using some built-in C++ hash structure.
+            - Such as std::unordered_map. Best case complexity is O(1), worst case is O(n) (if your hash function was so bad
+              that it stored all the data in one single bucket). So complexity should be quite close to O(1).
+            - Another option is std::map, which you could experiment with using instead of unordered_map to see if it increases speed.
+                - There's a chance map will be better if a lot of insertion/deletion is happening, but even here who knows.
+                - unordered_map seems to generally be faster, when you have a big table and order doesn't matter.
+      - Note that each bucket size should be fairly small (unless your hash function is pretty bad).
+      - Could see how Stockfish implements their TT, may give you some ideas.
+
+- For declaring raw arrays / std::arrays, if you don't use new then they should point to the stack or to static memory. If such
+  arrays are fields of the Position class though, and if you can't avoid declaring objects of Position on the heap (otherwise a 
+  stack overflow??, not sure), then will these array fields point to memory on the stack, static, or heap?
+     - In any case, a fixed-sized array should have its elements stored contiguously, whether it be in any of these storage categories.
+       So it should only have a marginal affect on performance, if its elements are on the heap.
+     - If the elements are on the stack or static, then this will only be an issue if there is some stack overflow (but then you'd know
+       since the program will crash, especially after running the Versus Sim).
+
+- For the "squares_amplifying_comp/user_2/3" vectors, the resize call each time the third constructor is run is a bit inefficient.
+  Consider refactoring these vectors to be std::arrays, maybe at some big size like 100, and having the last element be an int saying
+  how many of the array's elements are actually being used. So when adding/"deleting" from it, just change the value of this int.
+  And then just make sure to only use elements that are within the bounds of what should be used in the array.
+
+- Replace std::vector with std::array, where applicable (or even just raw arrays, on the stack or as static memory).
 - Get rid of the future_positions_size int variable (not used anywhere).
 - Try to avoid using the heap, ideally everywhere (maybe this is possible?). Whenever a unique pointer/shared pointer is declared, the heap is being used.
   For passing parameters to the 3rd constructor (recursively), passing a std::array (or a pointer to the std::array) should
@@ -9,6 +43,7 @@
      - But still try to replace std::vector with std::array, since the elements in std::array should be stored on the stack,
        even if the std::array pointer variable is on the heap (I think?).
 
+- In general, it seems like the engine should be faster, since it's written in C++ and is only going over thousands of nodes.
 
 
 ----------------------------------------------------------------------------
