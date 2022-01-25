@@ -11,6 +11,16 @@
        be closer in the array could be very slightly beneficial? So it depends on whether you think a piece being played
        in a square means it's more likely for that square's column or row to be used subsequently in the program's run.
 
+     - Could also store some data (esp. the board) as a string, which like an array would have 42 chars contiguously stored in memory.
+       The reason for using a string specifically is because the std::unordered_map uses the std::hash function, and one of its
+       specializations is for strings. There is no std::hash specialization for std::array, so you'd have to use your own hash function.
+            - I tested inserting strings of 42 chars in size (similar to a Connect Four board) into an unordered_map. It generally takes
+              between 0.01 and 0.015 seconds to insert 25000 into the map, which isn't that bad. I'm not sure whether the Connect Four engine usually goes
+              through less or more nodes than 25000 on average.
+            - Run a timeit experiment on each function in the Position class. If functions involving the TT are taking most of the time, then this stuff
+              with unordered_map should be good, since 0.01 to 0.015 seconds won't be much of a price to pay. Note that when you're measuring how long
+              a function takes, it would also count how long each of the function's callees take.
+
       - May be tricky to implement the TT as a 1D array/vector, since the bucket sizes are variable. But consider
         using some built-in C++ hash structure.
             - Such as std::unordered_map. Best case complexity is O(1), worst case is O(n) (if your hash function was so bad
