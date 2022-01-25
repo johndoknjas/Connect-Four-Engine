@@ -245,6 +245,8 @@ public:
     static vector<vector<bool>> board_for_squares_winning_for_comp; // 2-D board that stores true for a square if the comp wins after filling it in.
     static vector<vector<bool>> board_for_squares_winning_for_user; // 2-D board that stores true for a square if the user wins after filling it in.
 
+    static vector<double> times;
+
     // Public static methods:
 
     static vector<vector<double>> find_hash_values_for_all_squares_in_board(char piece);
@@ -407,10 +409,14 @@ vector<treasure_spot> position::empty_amplifying_vector;
 vector<vector<bool>> position::board_for_squares_winning_for_comp = create_board_of_bools();
 vector<vector<bool>> position::board_for_squares_winning_for_user = create_board_of_bools();
 
+vector<double> position::times(200);
+
 // CONSTRUCTORS:
 
 position::position(bool is_comp_turnP)
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     best_move_from_DB = {UNDEFINED, UNDEFINED};
 
     board = make_shared<vector<vector<char>>>();
@@ -495,7 +501,11 @@ position::position(bool is_comp_turnP)
         }
     }
 
+    times[0] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
     initialize_hash_value_of_position(); // uses pre_hash_value_of_position above to get an int >= 1,000,000 to set hash_value_of_position to.
+
+    start_time = steady_clock::now();
 
     // Now, I don't need to check if someone won, since this constructor starts the entire game.
     // I also don't need to call the analyze_last_move() function, since there is no last_move yet!
@@ -505,6 +515,8 @@ position::position(bool is_comp_turnP)
 
     // So, call minimax() now:
 
+    times[0] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
     minimax();
 }
 
@@ -512,6 +524,8 @@ position::position(const vector <vector<char>>& boardP, bool is_comp_turnP, coor
                    const vector<treasure_spot>& squares_amplifying_comp_2P, const vector<treasure_spot>& squares_amplifying_comp_3P,
                    const vector<treasure_spot>& squares_amplifying_user_2P, const vector<treasure_spot>& squares_amplifying_user_3P)
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     best_move_from_DB = {UNDEFINED, UNDEFINED};
 
     board = make_shared<vector<vector<char>>>();
@@ -617,6 +631,8 @@ position::position(const vector <vector<char>>& boardP, bool is_comp_turnP, coor
 
     squares_amplifying_user_3 = make_shared<vector<treasure_spot>>();
 
+    times[1] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
     read_amplifying_squares_into_pointer(squares_amplifying_comp_2, squares_amplifying_comp_2P);
 
     read_amplifying_squares_into_pointer(squares_amplifying_comp_3, squares_amplifying_comp_3P);
@@ -633,6 +649,8 @@ position::position(const vector <vector<char>>& boardP, bool is_comp_turnP, coor
                                    // clean-up there (not efficient!).
 
     // Now figure out the pre-hash value of the position:
+
+    start_time = steady_clock::now();
 
     pre_hash_value_of_position = 0.0;
 
@@ -657,7 +675,11 @@ position::position(const vector <vector<char>>& boardP, bool is_comp_turnP, coor
         }
     }
 
+    times[1] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
     initialize_hash_value_of_position(); // uses pre_hash_value_of_position above to get an int >= 1,000,000 to set hash_value_of_position to.
+
+    start_time = steady_clock::now();
 
     is_a_pruned_branch = false;
     got_value_from_pruned_child = false;
@@ -677,6 +699,8 @@ position::position(const vector <vector<char>>& boardP, bool is_comp_turnP, coor
         did_comp_go_first_in_the_game = !is_comp_turn;
     }
 
+    times[1] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
     analyze_last_move(); // will analyze the last_move, and then call minimax() if the game isn't over.
 }
 
@@ -689,6 +713,8 @@ position::position(shared_ptr<vector<vector<char>>> boardP, bool is_comp_turnP,
                    double pre_hash_value_of_positionP, shared_ptr<vector<int>> num_pieces_per_columnP,
                    bool did_comp_go_first_in_the_gameP)
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     best_move_from_DB = {UNDEFINED, UNDEFINED};
 
     did_comp_go_first_in_the_game = did_comp_go_first_in_the_gameP;
@@ -768,12 +794,20 @@ position::position(shared_ptr<vector<vector<char>>> boardP, bool is_comp_turnP,
         pre_hash_value_of_position += hash_values_of_squares_with_U[last_move.row][last_move.col];
     }
 
+    times[2] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
     initialize_hash_value_of_position(); // uses pre_hash_value_of_position above to get an int >= 1,000,000 to set hash_value_of_position to.
+
+    start_time = steady_clock::now();
 
     is_a_pruned_branch = false;
     got_value_from_pruned_child = false;
 
+    times[2] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
     analyze_last_move(); // will analyze the last_move, and then call minimax() if the game isn't over.
+
+    start_time = steady_clock::now();
 
     (*board)[last_move.row][last_move.col] = ' '; // since board is a pointer. This is repairing board for the parent node.
 
@@ -783,6 +817,8 @@ position::position(shared_ptr<vector<vector<char>>> boardP, bool is_comp_turnP,
     squares_amplifying_user_3->resize(static_cast<int>(old_size_of_squares_amplifying_user_3));
 
     (*num_pieces_per_column)[last_move.col] --;
+
+    times[2] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 }
 
 // GETTERS:
@@ -838,6 +874,8 @@ coordinate position::get_last_move() const
 
 coordinate position::find_best_move_for_comp()
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     if (depth_limit != 1)
     {
         throw runtime_error("depth limit does not equal 1 in find_best_move_for_comp()");
@@ -852,6 +890,8 @@ coordinate position::find_best_move_for_comp()
         {
             throw runtime_error("Trying to use the DB with > 9 pieces\n");
         }
+
+        times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 
         return best_move_from_DB;
     }
@@ -878,11 +918,15 @@ coordinate position::find_best_move_for_comp()
 
             copy_board[current.row][current.col] = 'C';
 
+            times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
             unique_ptr<position> pt = make_unique<position>(copy_board, !is_comp_turn, current,
                                                             *squares_amplifying_comp_2, *squares_amplifying_comp_3,
                                                             *squares_amplifying_user_2, *squares_amplifying_user_3);
                 // NOTE: The static method for returning a unique_ptr isn't being called here, as I don't care
                 // about iterative deepening. I know there's a forced win, and the TT will be used at depth = 1.
+
+            start_time = steady_clock::now();
 
             future_positions.push_back(move(pt));
         }
@@ -890,10 +934,16 @@ coordinate position::find_best_move_for_comp()
 
     if (evaluation == INT_MAX) // Comp is winning, so see if there's a solution to win in <= 9 moves:
     {
+        times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
         coordinate_and_value quick_winning_move = find_quick_winning_move(9); // UNDEFINED returned for value field if no solution in <= 9 moves.
+
+        start_time = steady_clock::now();
 
         if (quick_winning_move.value != UNDEFINED)
         {
+            times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
             return quick_winning_move.square;
         }
     }
@@ -913,13 +963,19 @@ coordinate position::find_best_move_for_comp()
 
             assisting_board[current_move.row][current_move.col] = 'C';
 
+            times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
             unique_ptr<position> pt = make_unique<position>(assisting_board, !is_comp_turn, current_move, empty_amplifying_vector,
                                                             empty_amplifying_vector, empty_amplifying_vector, empty_amplifying_vector);
 
             int number_of_moves_user_wins_in = pt->find_quick_winning_move(7).value;
 
+            start_time = steady_clock::now();
+
             if (number_of_moves_user_wins_in == UNDEFINED) // user will have to work for > 7 moves, so pick this option immediately!
             {
+                times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
                 return current_move;
             }
 
@@ -934,6 +990,8 @@ coordinate position::find_best_move_for_comp()
         {
             throw runtime_error("No possible moves?\n");
         }
+
+        times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 
         return most_stubborn_defense.square;
     }
@@ -956,6 +1014,7 @@ coordinate position::find_best_move_for_comp()
     {
         if (future_positions[index]->evaluation >= evaluation)
         {
+            times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
             return (future_positions[index]->last_move);
         }
     }
@@ -972,7 +1031,11 @@ coordinate position::find_best_move_for_comp()
 
         last_move = current_move;
 
+        times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
         bool does_move_win = did_someone_win();
+
+        start_time = steady_clock::now();
 
         (*board)[current_move.row][current_move.col] = ' ';
 
@@ -980,6 +1043,8 @@ coordinate position::find_best_move_for_comp()
 
         if (does_move_win)
         {
+            times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
             return current_move;
         }
     }
@@ -998,11 +1063,19 @@ coordinate position::find_best_move_for_comp()
 
             last_move = {current_move.row-1, current_move.col};
 
+            times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
             bool did_opponent_have_a_square_above = did_someone_win();
+
+            start_time = steady_clock::now();
 
             (*board)[current_move.row-1][current_move.col] = 'C';
 
+            times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
             bool did_computer_have_a_square_above = did_someone_win();
+
+            start_time = steady_clock::now();
 
             (*board)[current_move.row-1][current_move.col] = ' ';
             (*board)[current_move.row][current_move.col] = ' '; // redundant now since already empty, but leaving in anyway.
@@ -1011,6 +1084,8 @@ coordinate position::find_best_move_for_comp()
 
             if (!did_opponent_have_a_square_above && !did_computer_have_a_square_above)
             {
+                times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
                 return current_move;
             }
         }
@@ -1021,6 +1096,8 @@ coordinate position::find_best_move_for_comp()
     {
         if (current_move.col != 3)
         {
+            times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
             return current_move;
         }
     }
@@ -1029,6 +1106,8 @@ coordinate position::find_best_move_for_comp()
 
     if (possible_moves.size() == 1)
     {
+        times[3] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
         return possible_moves[0];
     }
 
@@ -1075,7 +1154,11 @@ coordinate position::get_best_move_from_DB() const
 
 void position::set_board(const vector <vector<char>>& boardP)
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     *board = boardP;
+
+    times[4] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 }
 
 void position::set_evaluation (int evalP)
@@ -1100,6 +1183,8 @@ void position::set_future_positions_size(int i)
 
 void position::randomize_order_of_possible_moves()
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     // I want to run through the first FOUR elements and swap them with a random element in the vector.
 
     for (int i = 0; i < possible_moves.size() && i < 4; i++)
@@ -1112,6 +1197,8 @@ void position::randomize_order_of_possible_moves()
 
         possible_moves[i] = temp;
     }
+
+    times[5] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 }
 
 void position::clean_up_amplifying_vectors()
@@ -1124,16 +1211,26 @@ void position::clean_up_amplifying_vectors()
 
 void position::rearrange_possible_moves(const vector<coordinate>& front_moves)
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     int start_size = possible_moves.size();
 
     vector<coordinate> replacement = front_moves; // possible_moves will be set to this vector at the end of the function.
 
     for (const coordinate& temp: possible_moves)
     {
+        times[6] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
         if (!in_coordinate_vector(front_moves, temp)) // not in front_moves, so add to replacement:
         {
+            start_time = steady_clock::now();
+
             replacement.push_back(temp);
+
+            times[6] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
         }
+
+        start_time = steady_clock::now();
     }
 
     possible_moves = replacement;
@@ -1144,10 +1241,14 @@ void position::rearrange_possible_moves(const vector<coordinate>& front_moves)
     {
         throw runtime_error("possible_moves.size changes.\n");
     }
+
+    times[6] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 }
 
 void position::initialize_hash_value_of_position()
 {
+    steady_clock::time_point start_time = steady_clock::now();
+    
     double val = pre_hash_value_of_position;
 
     while (val < 100000.0)
@@ -1156,12 +1257,18 @@ void position::initialize_hash_value_of_position()
     }
 
     hash_value_of_position = static_cast<int>(round(val));
+
+    times[7] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 }
 
 void position::add_position_to_transposition_table(bool is_evaluation_indisputable)
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     if (stop_signal)
     {
+        times[8] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
         return;
     }
 
@@ -1225,6 +1332,8 @@ void position::add_position_to_transposition_table(bool is_evaluation_indisputab
             indices_of_elements_in_TT.push_back(hash_value_of_position);
         }
     }
+
+    times[8] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 }
 
 void position::set_best_move_from_DB(const coordinate& val)
@@ -1253,23 +1362,33 @@ bool position::is_game_drawn() const
 
 bool position::evaluation_in_future_positions(int eval) const
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     for (int i = 0; i < future_positions.size(); i++)
     {
         if (future_positions[i]->evaluation == eval)
         {
+            times[9] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
             return true;
         }
     }
+
+    times[9] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 
     return false;
 }
 
 bool position::is_valid_move(string column) const
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     // First, check if column is only 1 in size:
 
     if (column.size() != 1)
     {
+        times[10] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
         return false;
     }
 
@@ -1277,10 +1396,14 @@ bool position::is_valid_move(string column) const
 
     // Now check if letter is between 'A' - 'G' (or 'a' - 'g')
 
+    times[10] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+
     if (!is_acceptable_letter(letter))
     {
         return false;
     }
+
+    start_time = steady_clock::now();
 
     // Now to figure out what column is represented by letter:
 
@@ -1298,11 +1421,20 @@ bool position::is_valid_move(string column) const
 
     // Now to check if the top spot of col in board is empty:
 
-    return ((*board)[0][col] == ' ');
+    if ((*board)[0][col] == ' ') {
+        times[10] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+        return true;
+    }
+    else {
+        times[10] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+        return false;
+    }
 }
 
 void position::remove_treasure_spot_objects_from_vector(shared_ptr<vector<treasure_spot>>& vec)
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     shared_ptr<vector<treasure_spot>> updated_vec = make_shared<vector<treasure_spot>>();
     // will store the good elements of vec (the ones that shouldn't be removed from vec).
 
@@ -1315,6 +1447,8 @@ void position::remove_treasure_spot_objects_from_vector(shared_ptr<vector<treasu
     }
 
     vec = updated_vec;
+
+    times[11] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 }
 
 void position::print_amplifying_vectors()
@@ -1377,6 +1511,8 @@ void position::find_critical_moves_in_amplifying_vector(vector<coordinate>& crit
                                                         const shared_ptr<vector<treasure_spot>> amplifying_vector,
                                                         bool are_3_pieces, char piece)
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
     for (const treasure_spot& temp: *amplifying_vector)
     {
         coordinate current_square = temp.current_square;
@@ -1402,39 +1538,65 @@ void position::find_critical_moves_in_amplifying_vector(vector<coordinate>& crit
             }
         }
     }
+
+    times[12] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 }
 
 bool position::is_in_bounds(const coordinate& square) const
 {
-     return (square.row >= 0 && square.row <= max_row_index && square.col >= 0 && square.col <= max_col_index);
+    steady_clock::time_point start_time = steady_clock::now();
+
+    if (square.row >= 0 && square.row <= max_row_index && square.col >= 0 && square.col <= max_col_index) {
+        times[13] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+        return true;
+    }
+    else {
+        times[13] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
+        return false;
+    }
 }
 
 bool position::in_coordinate_vector(const vector<coordinate>& vec, const coordinate& element)
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
      for (const coordinate& temp: vec)
      {
          if (temp == element)
          {
+             times[14] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
              return true;
          }
      }
+
+     times[14] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 
      return false;
 }
 
 void position::remove_duplicates(vector<coordinate>& vec)
 {
+    steady_clock::time_point start_time = steady_clock::now();
+
      vector<coordinate> replacement; // vec will be set equal to replacement at the end of this function.
 
      for (const coordinate& temp: vec)
      {
+         times[15] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
          if (!in_coordinate_vector(replacement, temp))
          {
+             start_time = steady_clock::now();
              replacement.push_back(temp);
+         }
+         else
+         {
+             start_time = steady_clock::now();
          }
      }
 
      vec = replacement;
+
+     times[15] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 }
 
 void position::initialize_row_barriers(coordinate& lowest_comp_square_D, coordinate& lowest_good_comp_square_D,
@@ -1453,13 +1615,21 @@ void position::initialize_row_barriers(coordinate& lowest_comp_square_D, coordin
     // Now parse through squares_winning_for_comp vector, and for each square check if it's also
     // in the squares_winning_for_user vector. If so, it's a "barricade" square.
 
+    steady_clock::time_point start_time = steady_clock::now();
+
     vector<coordinate> barricade_squares;
 
     for (const coordinate& temp: squares_winning_for_comp)
     {
+        times[16] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
         if (in_coordinate_vector(squares_winning_for_user, temp))
         {
+            start_time = steady_clock::now();
             barricade_squares.push_back(temp);
+        }
+        else
+        {
+            start_time = steady_clock::now();
         }
     }
 
@@ -1484,6 +1654,7 @@ void position::initialize_row_barriers(coordinate& lowest_comp_square_D, coordin
             row_barriers[temp.col] = temp.row;
         }
     }
+    times[16] += (duration_cast<duration<double>>(steady_clock::now() - start_time)).count();
 }
 
 void position::update_D_squares(coordinate& lowest_square_D, coordinate& lowest_good_square_D,

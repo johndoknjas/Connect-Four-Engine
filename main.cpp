@@ -42,6 +42,13 @@ int num_other_threads_running = 0;
 void display_board(vector<vector<char>> board, bool x_represents_user,
                    bool is_starting_position, coordinate last_move)
 {
+    cout << "\n\nTime the computer has spent in functions:\n";
+    for (int i = 0; i < position::times.size(); i++) {
+        if (position::times[i] > 0.00000000001) {
+            cout << "times[" << i << "]: " << position::times[i] << " seconds\n";
+        }
+    }
+    
     // First, change the 'C' and 'U' in board to 'X' and 'O', depending on if 'X' or 'O' represents the user...
 
     for (int row = 0; row <= 5; row++)
