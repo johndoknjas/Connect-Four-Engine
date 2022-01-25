@@ -55,6 +55,10 @@
 
 - In general, it seems like the engine should be faster, since it's written in C++ and is only going over thousands of nodes.
 
+- Everything seems to be running fine now, so you can start working on the optimization stuff above.
+  Note though that for the Bin and Debug folders, not sure if VSCode is using them, or if they were just a CodeBlocks thing.
+  If they don't get modified at all in the future, try to rearrange the project structure to not have the Python stuff
+  inside these folders.
 
 ----------------------------------------------------------------------------
 Jan 2022 onward stuff above this line.
