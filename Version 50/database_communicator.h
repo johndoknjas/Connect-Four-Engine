@@ -1,11 +1,13 @@
 #pragma once
 
-#include "sqlite3.h"
+#include <sqlite3.h>
 #include <stdexcept>
 #include <cstdlib>
 #include <string>
 #include <vector>
 #include <fstream>
+#include <iostream>
+#include <algorithm>
 
 using namespace std;
 
