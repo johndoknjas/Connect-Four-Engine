@@ -48,6 +48,7 @@ void display_board(vector<vector<char>> board, bool x_represents_user,
             cout << "times[" << i << "]: " << position::times[i] << " seconds\n";
         }
     }
+    cout << "node_counter: " << position::node_counter << "\n";
     
     // First, change the 'C' and 'U' in board to 'X' and 'O', depending on if 'X' or 'O' represents the user...
 

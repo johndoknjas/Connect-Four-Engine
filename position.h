@@ -247,6 +247,8 @@ public:
 
     static vector<double> times;
 
+    static int node_counter;
+
     // Public static methods:
 
     static vector<vector<double>> find_hash_values_for_all_squares_in_board(char piece);
@@ -410,6 +412,8 @@ vector<vector<bool>> position::board_for_squares_winning_for_comp = create_board
 vector<vector<bool>> position::board_for_squares_winning_for_user = create_board_of_bools();
 
 vector<double> position::times(200);
+
+int position::node_counter = 0;
 
 // CONSTRUCTORS:
 
@@ -713,6 +717,8 @@ position::position(shared_ptr<vector<vector<char>>> boardP, bool is_comp_turnP,
                    double pre_hash_value_of_positionP, shared_ptr<vector<int>> num_pieces_per_columnP,
                    bool did_comp_go_first_in_the_gameP)
 {
+    node_counter++;
+
     steady_clock::time_point start_time = steady_clock::now();
 
     best_move_from_DB = {UNDEFINED, UNDEFINED};
