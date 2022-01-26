@@ -40,8 +40,18 @@
             - Another option is std::map, which you could experiment with using instead of unordered_map to see if it increases speed.
                 - There's a chance map will be better if a lot of insertion/deletion is happening, but even here who knows.
                 - unordered_map seems to generally be faster, when you have a big table and order doesn't matter.
-      - Note that each bucket size should be fairly small (unless your hash function is pretty bad).
-      - Could see how Stockfish implements their TT, may give you some ideas.
+      - For any two elemnts (including strings), the odds of them having them same hash (from std::hash)
+        approaches 1 / numeric_limits - so roughly 1 in 2 billion? This means that almost all buckets
+        should just have one element in them (meaning a for loop through the bucket will almost always
+        only loop once - helps branch prediction). Although the loops you currently have may be changed,
+        depending on how unordered_map works - don't know.
+            - Problem(?): Turns out the engine goes through a few million nodes per game, so this means
+              std::hash would be called millions of times on strings that are 42 characters in size.
+              Probably would have bad performance (but could still check it?).
+            - In the benchmarking-code branch, I'm now outputting statistics for the TT. You
+              could continue to play around with it to see if there are any ideas to improve it.
+            - It would be interesting to see which buckets in the TT get filled. E.g., are
+              they mainly ones between 100,000 - 200,000, or 400,000 - 600,000, etc.
 
 - For declaring raw arrays / std::arrays, if you don't use new then they should point to the stack or to static memory. If such
   arrays are fields of the Position class though, and if you can't avoid declaring objects of Position on the heap (otherwise a 
@@ -66,6 +76,8 @@
        even if the std::array pointer variable is on the heap (I think?).
 
 - In general, it seems like the engine should be faster, since it's written in C++ and is only going over thousands of nodes.
+  - Correction: the engine is actually going over a few million nodes per game, so it does seem to be
+    reasonably fast as is.
 
 - Everything seems to be running fine now, so you can start working on the optimization stuff above.
   Note though that for the Bin and Debug folders, not sure if VSCode is using them, or if they were just a CodeBlocks thing.
