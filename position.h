@@ -1379,25 +1379,21 @@ void position::find_critical_moves_in_amplifying_vector(vector<coordinate>& crit
 {
     for (const treasure_spot& temp: *amplifying_vector)
     {
-        coordinate current_square = temp.current_square;
-        coordinate next_square = temp.next_square;
-        coordinate other_next_square = temp.other_next_square;
-
-        if ((*board)[current_square.row][current_square.col] == ' ') // so the square is still a valid amplifying square...
+        if ((*board)[temp.current_square.row][temp.current_square.col] == ' ') // so the square is still a valid amplifying square...
         {
             // Now to see if the square can be filled in one move...
 
-            if (current_square.row == max_row_index || (*board)[current_square.row + 1][current_square.col] != ' ')
+            if (temp.current_square.row == max_row_index || (*board)[temp.current_square.row + 1][temp.current_square.col] != ' ')
             {
                 // Now to see if the square creates a 4-in-a-row, if filled...
 
-                if (are_3_pieces || (is_in_bounds(next_square) && (*board)[next_square.row][next_square.col] == piece) ||
-                    (is_in_bounds(other_next_square) && (*board)[other_next_square.row][other_next_square.col] == piece))
+                if (are_3_pieces || (is_in_bounds(temp.next_square) && (*board)[temp.next_square.row][temp.next_square.col] == piece) ||
+                    (is_in_bounds(temp.other_next_square) && (*board)[temp.other_next_square.row][temp.other_next_square.col] == piece))
                 {
                     // Since the square/move either amplifies a 3-in-a-row or connects a 2-in-a-row with a piece,
                     // add it to the critical_moves vector (since it creates a 4-in-a-row):
 
-                    critical_moves.push_back(move(current_square));
+                    critical_moves.push_back(temp.current_square);
                 }
             }
         }
