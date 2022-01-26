@@ -83,6 +83,23 @@
    - Also, is using the heap even needed? If you have a pointer to a board on the stack, 
      such as a pointer to a string on the stack (string's chars will be on heap still though),
      and then pass that pointer to a child node, should work?
+   
+   - Maybe a better idea is to just pass stuff by reference to the 3rd constructor? E.g., for a string board, just
+     make the parameter (string& boardP). This avoids overhead from shared_ptr, and also avoids having to dereference
+     a pointer (not sure if this part actually will help though after the compiler's done its thing; but still, there is a clear benefit
+     in that the code will be cleaner without having to deference things everywhere).
+
+        - Each node will have a field string& board, and in the constructor just do board = boardP. Then when a node changes its
+          board, this should just modify the same board all the nodes share.
+              - Also, in Experiments/Indexing time with and without dereferencing - also timing reference assignment, I timed
+                assigning a big string to a string&, and it looks like its O(1). So this should definitely be efficient.
+
+        - Not using pointers shouldn't cause a memory leak (and even if it did, it would be highly insignificant). If the
+          string is located on the stack, no problem. And if unique_ptr<position> causes the string field to be on the heap,
+          then the destructor for the position class should call the string destructor.
+
+        - https://www.geeksforgeeks.org/references-in-c/
+          
 
 ----------------------------------------------------------------------------
 Jan 2022 onward stuff above this line.
