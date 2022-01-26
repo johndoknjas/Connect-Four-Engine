@@ -12,6 +12,7 @@
 #include <climits>
 #include <cmath>
 #include <iostream>
+#include <string>
 #include "tool.h"
 #include "database_communicator.h"
 
@@ -41,7 +42,7 @@ struct treasure_spot
 
 struct position_info_for_TT // The key info of a position that will be stored in the transposition table.
 {
-    vector<vector<char>> board; // The position's 2-D vector of char board. Acts as the KEY!
+    string board;
     int evaluation;
     int calculation_depth_from_this_position; // stores how far ahead the computer calculated for getting the position's evaluation.
     vector<coordinate> possible_moves_sorted; // stores the position's possible moves, sorted from probable best to probable worst.
@@ -81,12 +82,12 @@ public:
     position(bool is_comp_turnP);
 
     // PROGRAMMER CALLS WHEN COMP/USER MAKES A MOVE IN GAME.
-    position(const vector <vector<char>>& boardP, bool is_comp_turnP, coordinate last_moveP,
+    position(const string& boardP, bool is_comp_turnP, coordinate last_moveP,
              const vector<treasure_spot>& squares_amplifying_comp_2P, const vector<treasure_spot>& squares_amplifying_comp_3P,
              const vector<treasure_spot>& squares_amplifying_user_2P, const vector<treasure_spot>& squares_amplifying_user_3P);
 
     // COMPUTER CALLS RECURSIVELY IN ITS MINIMAX CALCULATIONS.
-    position(shared_ptr<vector<vector<char>>> boardP, bool is_comp_turnP,
+    position(shared_ptr<string> boardP, bool is_comp_turnP,
              int depthP, int number_of_piecesP, coordinate last_moveP,
              const vector<coordinate>& possible_movesP, int possible_moves_index,
              int alphaP, int betaP,
@@ -98,14 +99,14 @@ public:
     // No param for future_positions is sent to constructor, as this is figured out by the computer via minimax.
 
     // Getters:
-    vector <vector<char>> get_board() const;
+    vector<vector<char>> get_board() const;
 //    vector <unique_ptr<position>> get_future_positions() const;
     int get_evaluation() const;
     bool get_is_comp_turn() const;
     int get_depth() const;
     int get_number_of_pieces() const;
     unique_ptr<position> get_a_future_position(int i); // MOVES the position object at index i of future_positions and returns!
-    vector <unique_ptr<position>> get_future_positions(); // MOVES the future_positions vector and returns it!
+    vector<unique_ptr<position>> get_future_positions(); // MOVES the future_positions vector and returns it!
     int get_future_positions_size() const;
     coordinate get_last_move() const;
     coordinate find_best_move_for_comp(); // finds the best move to play in this current position, for the comp, and returns.
@@ -118,7 +119,7 @@ public:
     coordinate get_best_move_from_DB() const;
 
     // Setters:
-    void set_board(const vector <vector<char>>& boardP);
+    void set_board(const vector<vector<char>>& boardP);
 //    void set_future_positions(const vector<unique_ptr<position>>& future_positionsP);
     void set_evaluation (int evalP);
     void set_is_comp_turn (bool turnP);
@@ -190,7 +191,7 @@ public:
 
     void set_static_thinking_time(double val);
 
-    unique_ptr<tool> call_static_think_on_game_position(const vector <vector<char>>& boardP, bool is_comp_turnP,
+    unique_ptr<tool> call_static_think_on_game_position(const vector<vector<char>>& boardP, bool is_comp_turnP,
                                                         coordinate last_moveP, const vector<treasure_spot>& squares_amplifying_comp_2P,
                                                         const vector<treasure_spot>& squares_amplifying_comp_3P,
                                                         const vector<treasure_spot>& squares_amplifying_user_2P,
@@ -242,8 +243,8 @@ public:
 
     static vector<treasure_spot> empty_amplifying_vector;
 
-    static vector<vector<bool>> board_for_squares_winning_for_comp; // 2-D board that stores true for a square if the comp wins after filling it in.
-    static vector<vector<bool>> board_for_squares_winning_for_user; // 2-D board that stores true for a square if the user wins after filling it in.
+    static vector<vector<bool>> board_of_squares_winning_for_comp; // 2-D board that stores true for a square if the comp wins after filling it in.
+    static vector<vector<bool>> board_of_squares_winning_for_user; // 2-D board that stores true for a square if the user wins after filling it in.
 
     // Public static methods:
 
@@ -264,7 +265,7 @@ public:
     static position_info_for_TT find_duplicate_in_TT(const unique_ptr<position>& pt);
     // Searches through the TT for a duplicate of pt, and returns it.
 
-    static coordinate find_legal_square(const vector<vector<char>>& boardP, int col);
+    static coordinate find_legal_square(const string& boardP, int col);
 
     static unique_ptr<position> think_on_game_position(const vector<vector<char>>& boardP, bool is_comp_turnP, coordinate last_moveP,
                                     const vector<treasure_spot>& squares_amplifying_comp_2P, const vector<treasure_spot>& squares_amplifying_comp_3P,
@@ -276,7 +277,9 @@ public:
     static unique_ptr<position> think_on_game_position(bool is_comp_turnP, bool starting_new_game,
                                                        coordinate& best_move, bool generate_best_move);
 
-    static vector<vector<char>> create_starting_board();
+    static string create_starting_board_string();
+
+    static vector<vector<char>> create_starting_board_2D_vector();
 
     static void read_amplifying_squares_into_pointer(shared_ptr<vector<treasure_spot>>& the_pointer, const vector<treasure_spot>& amplifying_vectorP);
 
@@ -286,7 +289,7 @@ public:
 
 private:
     // Private variables:
-    shared_ptr<vector<vector<char>>> board; // stores C's and U's and ' ', representing the computer and user's pieces and empty squares.
+    shared_ptr<string> board; // stores C's and U's and ' ', representing the computer and user's pieces and empty squares.
     bool is_comp_turn; // stores true if it's the computer's turn, and false if it's the user's turn.
     bool did_comp_go_first_in_the_game; // stores true if the computer started out moving first at the root node.
     int depth; // stores how deep this position is in the computer's calculations.
@@ -365,8 +368,8 @@ private:
     bool positive_slope_diagonal_four_combo() const; // returns true if there is a positive slope diagonal 4-in-a-row in board.
     bool negative_slope_diagonal_four_combo() const; // returns true if there is a negative slope diagonal 4-in-a-row in board.
     bool is_acceptable_letter(char c) const; // returns true if char c is a letter from a-g (uppercase OR lowercase).
-    bool is_element_in_vector(const vector<vector<vector<char>>>& vec, const vector<vector<char>>& element) const;
-    // returns true if element is in vector vec. *Note*: vec is just a vector storing boards (i.e., 2D vectors of chars),
+    bool is_element_in_vector(const vector<string>& vec, const string& element) const;
+    // returns true if element is in vector vec. *Note*: vec is just a vector storing boards,
     // and element is a board (not necessarily the private board attribute of the calling object though!).
     coordinate find_starting_horizontal_point() const; // finds left-most connected square from last_move.
     coordinate find_ending_horizontal_point() const; // finds right_most connected square from last_move.
@@ -404,8 +407,8 @@ double position::thinking_time = 0.30;
 
 vector<treasure_spot> position::empty_amplifying_vector;
 
-vector<vector<bool>> position::board_for_squares_winning_for_comp = create_board_of_bools();
-vector<vector<bool>> position::board_for_squares_winning_for_user = create_board_of_bools();
+vector<vector<bool>> position::board_of_squares_winning_for_comp = create_board_of_bools();
+vector<vector<bool>> position::board_of_squares_winning_for_user = create_board_of_bools();
 
 // CONSTRUCTORS:
 
@@ -413,19 +416,7 @@ position::position(bool is_comp_turnP)
 {
     best_move_from_DB = {UNDEFINED, UNDEFINED};
 
-    board = make_shared<vector<vector<char>>>();
-
-    vector<char> row;
-
-    for (int i = 0; i <= max_col_index; i++)
-    {
-        row.push_back(' ');
-    }
-
-    for (int i = 0; i <= max_row_index; i++)
-    {
-        board->push_back(row);
-    }
+    board = make_shared<string>(42, ' ');
 
     // Initialize num_pieces_per_column:
 
@@ -491,7 +482,7 @@ position::position(bool is_comp_turnP)
     {
         for (int col = 0; col <= max_col_index; col++)
         {
-            pre_hash_value_of_position += hash_values_of_squares_empty[row][col]; // since this vector has same dimensions as board... 7x6.
+            pre_hash_value_of_position += hash_values_of_squares_empty[row][col];
         }
     }
 
@@ -508,33 +499,16 @@ position::position(bool is_comp_turnP)
     minimax();
 }
 
-position::position(const vector <vector<char>>& boardP, bool is_comp_turnP, coordinate last_moveP,
+position::position(const string& boardP, bool is_comp_turnP, coordinate last_moveP,
                    const vector<treasure_spot>& squares_amplifying_comp_2P, const vector<treasure_spot>& squares_amplifying_comp_3P,
                    const vector<treasure_spot>& squares_amplifying_user_2P, const vector<treasure_spot>& squares_amplifying_user_3P)
 {
     best_move_from_DB = {UNDEFINED, UNDEFINED};
 
-    board = make_shared<vector<vector<char>>>();
+    board = make_shared<string>(boardP);
 
-    vector<char> row;
-
-    for (int i = 0; i <= max_col_index; i++)
-    {
-        row.push_back(' ');
-    }
-
-    for (int i = 0; i <= max_row_index; i++)
-    {
-        board->push_back(row);
-    }
-
-    for (int r = 0; r <= max_row_index; r++)
-    {
-        for (int c = 0; c <= max_col_index; c++)
-        {
-            (*board)[r][c] = boardP[r][c];
-        }
-    }
+    // TODO - for rest of this file, continue searching for "board" and
+    // replacing 2D vector stuff with string stuff.
 
     is_comp_turn = is_comp_turnP;
 
@@ -2010,11 +1984,14 @@ coordinate position::find_legal_square(const vector<vector<char>>& boardP, int c
     throw runtime_error("The column is full\n");
 }
 
-unique_ptr<position> position::think_on_game_position(const vector <vector<char>>& boardP, bool is_comp_turnP, coordinate last_moveP,
+unique_ptr<position> position::think_on_game_position(const vector<vector<char>>& boardP, bool is_comp_turnP, coordinate last_moveP,
                                     const vector<treasure_spot>& squares_amplifying_comp_2P, const vector<treasure_spot>& squares_amplifying_comp_3P,
                                     const vector<treasure_spot>& squares_amplifying_user_2P, const vector<treasure_spot>& squares_amplifying_user_3P,
                                     bool starting_new_game, coordinate& best_move, bool generate_best_move)
 {
+    // TODO - Make a string board, and make it represent the board that boardP does.
+    // Then use this string board in this function, instead of boardP.
+
     const int max_depth_limit = UNDEFINED;
     // If this engine is doing a time_limited think, set the value of
     // this variable to UNDEFINED.
@@ -2034,7 +2011,7 @@ unique_ptr<position> position::think_on_game_position(const vector <vector<char>
         surpassed_DB = false;
     }
 
-    const bool is_this_the_starting_position = boardP == create_starting_board();
+    const bool is_this_the_starting_position = boardP == create_starting_board_string();
 
     // this variable says whether to call constructor 1/2.
 
@@ -2278,13 +2255,13 @@ unique_ptr<position> position::think_on_game_position(bool is_comp_turnP, bool s
 
     vector<treasure_spot> empty_vector;
 
-    return (move(think_on_game_position(create_starting_board(), is_comp_turnP,
+    return (move(think_on_game_position(create_starting_board_2D_vector(), is_comp_turnP,
                                         undefined_move, empty_vector, empty_vector,
                                         empty_vector, empty_vector, starting_new_game,
                                         best_move, generate_best_move)));
 }
 
-vector<vector<char>> position::create_starting_board()
+vector<vector<char>> position::create_starting_board_2D_vector()
 {
     vector<vector<char>> result;
 
@@ -2300,6 +2277,12 @@ vector<vector<char>> position::create_starting_board()
         result.push_back(row);
     }
 
+    return result;
+}
+
+string position::create_starting_board_string()
+{
+    string result(42, ' ');
     return result;
 }
 
@@ -3254,21 +3237,21 @@ void position::smart_evaluation()
     // respective value (determined in find_individual_player_evaluation()).
 
     find_individual_player_evaluation(squares_amplifying_comp_3, squares_amplifying_comp_2, 'C',
-                                      board_for_squares_winning_for_comp, info_for_comp_valid_amplifying_squares);
+                                      board_of_squares_winning_for_comp, info_for_comp_valid_amplifying_squares);
     find_individual_player_evaluation(squares_amplifying_user_3, squares_amplifying_user_2, 'U',
-                                      board_for_squares_winning_for_user, info_for_user_valid_amplifying_squares);
+                                      board_of_squares_winning_for_user, info_for_user_valid_amplifying_squares);
 
     evaluation = round(find_revised_player_evaluation(info_for_comp_valid_amplifying_squares,
-                                                      board_for_squares_winning_for_comp, board_for_squares_winning_for_user, true) -
+                                                      board_of_squares_winning_for_comp, board_of_squares_winning_for_user, true) -
                        find_revised_player_evaluation(info_for_user_valid_amplifying_squares,
-                                                      board_for_squares_winning_for_user, board_for_squares_winning_for_comp, false));
+                                                      board_of_squares_winning_for_user, board_of_squares_winning_for_comp, false));
 
     // The statement finds the final individual evaluation for the computer and user. It then finds the difference between these two
     // values, and returns this difference rounded to an int.
 
-    reset_board_of_bools(board_for_squares_winning_for_comp, info_for_comp_valid_amplifying_squares);
+    reset_board_of_bools(board_of_squares_winning_for_comp, info_for_comp_valid_amplifying_squares);
 
-    reset_board_of_bools(board_for_squares_winning_for_user, info_for_user_valid_amplifying_squares);
+    reset_board_of_bools(board_of_squares_winning_for_user, info_for_user_valid_amplifying_squares);
 }
 
 void position::find_individual_player_evaluation(const shared_ptr<vector<treasure_spot>> squares_amplifying_3,

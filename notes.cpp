@@ -1,4 +1,16 @@
-/* Version 50
+/* Version 51
+
+- Functional changes for V51 so far:
+    - Get rid of three lines where a coordinate object is copied. Although the compiler may now
+      have to do this itself, so maybe this doesn't actually speed things up.
+- Currently working on:
+    - Making the board a string instead of a 2D vector.
+- Expectation:
+    - In the Versus Sim against Version 50, the match should be completely drawn when search
+      is depth limited, but Version 51 should be faster.
+
+
+
 
 - Get rid of 2D vectors, as accessing elements in them is relatively inefficient. Replace with 1D vectors or
   1D arrays. E.g., the 2D vector<vector<char>> board should be a one dimensional list, and it can easily represent
@@ -59,6 +71,18 @@
   Note though that for the Bin and Debug folders, not sure if VSCode is using them, or if they were just a CodeBlocks thing.
   If they don't get modified at all in the future, try to rearrange the project structure to not have the Python stuff
   inside these folders.
+
+- Change the board of bools (currently 2-D vectors) to strings (or std::array, since they won't
+  be used by unordered_map for hashing).
+
+- https://stackoverflow.com/questions/3628081/shared-ptr-horrible-speed
+   - Consider passing shared_ptrs by reference, instead of by value (see the top answer).
+   - Could also stop using shared_ptr altogether, and just use raw pointers. E.g.,
+     if all the nodes have a raw pointer to the same board on the heap, then even if there 
+     is a memory leak, it would be insignificant.
+   - Also, is using the heap even needed? If you have a pointer to a board on the stack, 
+     such as a pointer to a string on the stack (string's chars will be on heap still though),
+     and then pass that pointer to a child node, should work?
 
 ----------------------------------------------------------------------------
 Jan 2022 onward stuff above this line.
