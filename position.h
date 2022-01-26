@@ -1515,9 +1515,11 @@ void position::find_critical_moves_in_amplifying_vector(vector<coordinate>& crit
 
     for (const treasure_spot& temp: *amplifying_vector)
     {
+        steady_clock::time_point start_time_2 = steady_clock::now();
         coordinate current_square = temp.current_square;
         coordinate next_square = temp.next_square;
         coordinate other_next_square = temp.other_next_square;
+        times[times.size()-12] += (duration_cast<duration<double>>(steady_clock::now() - start_time_2)).count();
 
         if ((*board)[current_square.row][current_square.col] == ' ') // so the square is still a valid amplifying square...
         {
