@@ -49,6 +49,33 @@ void display_board(vector<vector<char>> board, bool x_represents_user,
         }
     }
     cout << "node_counter: " << position::node_counter << "\n";
+
+    double total_num_in_TT = 0;
+    double num_buckets_used = 0;
+    double max_num_in_single_bucket = 0;
+
+    vector<int> num_buckets_with_size_of_index(100);
+
+    for (int i = 0; i < position::transposition_table.size(); i++) {
+        total_num_in_TT += position::transposition_table[i].size();
+        if (position::transposition_table[i].size() > 0) {
+            num_buckets_used++;
+        }
+        if (position::transposition_table[i].size() > max_num_in_single_bucket) {
+            max_num_in_single_bucket = position::transposition_table[i].size();
+        }
+        num_buckets_with_size_of_index[position::transposition_table[i].size()]++;
+    }
+
+    cout << "total_num_in_TT = " << total_num_in_TT << "\n";
+    cout << "num_buckets_used = " << num_buckets_used << "\n";
+    cout << "max_num_in_single_bucket = " << max_num_in_single_bucket << "\n";
+
+    for (int i = 0; i < num_buckets_with_size_of_index.size(); i++) {
+        if (num_buckets_with_size_of_index[i] > 0) {
+            cout << num_buckets_with_size_of_index[i] << " buckets containing " << i << " elements.\n";
+        }
+    }
     
     // First, change the 'C' and 'U' in board to 'X' and 'O', depending on if 'X' or 'O' represents the user...
 
