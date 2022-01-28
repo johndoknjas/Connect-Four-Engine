@@ -3,12 +3,20 @@
 - Functional changes for V51 so far:
     - Get rid of three lines where a coordinate object is copied. Although the compiler may now
       have to do this itself, so maybe this doesn't actually speed things up.
+    - Get rid of future_positions_size. Also bool is_child_pruned in minimax(), and coordinate current_move. Unecessary
+      copies/assignments. And in smart_evaluation(), store the lowest squares in D as simple ints. 
+      The col values of 3 aren't used anywhere.
+    - In the first for loop of add_position_to_transposition_table, break at the end of the first if statement block.
+      Whether or not the second if statement is true should be irrelevant to the decision to break.
 - Currently working on:
     - Making the board a string instead of a 2D vector.
+    - *Update* - see the experiment results of the 2D vector vs string experiment. It seems that with O2 optimization
+      turned on, there isn't any significant benefit to using a string. Maybe it's different with connect four though,
+      since all the operations on the collections aren't being done immediately one after the other in a loop - it could
+      have been the case that the 2D vector matched the string in the experiemnt due to some caching optimizations?
 - Expectation:
     - In the Versus Sim against Version 50, the match should be completely drawn when search
       is depth limited, but Version 51 should be faster.
-
 
 
 
@@ -47,7 +55,12 @@
         depending on how unordered_map works - don't know.
             - Problem(?): Turns out the engine goes through a few million nodes per game, so this means
               std::hash would be called millions of times on strings that are 42 characters in size.
-              Probably would have bad performance (but could still check it?).
+              May have bad performance (but could still check it?).
+            - Idea: if you use unordered_map, don't store a copy of the board (in a position_info_for_TT object).
+              The chance of a hash collision is already very unlikely, so you could just store the hash value you're
+              currently using, and use it as a second check when referencing an element in the unordered_map.
+              This saves on having to copy a vector, the heap memory to store it, and the cost of comparing a board
+              to a board in the TT to ensure it's the right element.
             - In the benchmarking-code branch, I'm now outputting statistics for the TT. You
               could continue to play around with it to see if there are any ideas to improve it.
             - It would be interesting to see which buckets in the TT get filled. E.g., are

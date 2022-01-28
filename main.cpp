@@ -44,34 +44,12 @@ void display_board(vector<vector<char>> board, bool x_represents_user,
 {
     // First, change the 'C' and 'U' in board to 'X' and 'O', depending on if 'X' or 'O' represents the user...
 
-    for (int row = 0; row <= 5; row++)
-    {
-        for (int col = 0; col <= 6; col++)
-        {
-            if (board[row][col] == 'U')
-            {
-                if (x_represents_user)
-                {
-                    board[row][col] = 'X';
-                }
-
-                else
-                {
-                    board[row][col] = 'O';
-                }
-            }
-
-            else if (board[row][col] == 'C')
-            {
-                if (x_represents_user) // so 'O' represents the computer:
-                {
-                    board[row][col] = 'O';
-                }
-
-                else
-                {
-                    board[row][col] = 'X';
-                }
+    for (int row = 0; row <= 5; row++) {
+        for (int col = 0; col <= 6; col++) {
+            if (board[row][col] == 'U') {
+                board[row][col] = x_represents_user ? 'X' : 'O';
+            } else if (board[row][col] == 'C') {
+                board[row][col] = x_represents_user ? 'O' : 'X';
             }
         }
     }

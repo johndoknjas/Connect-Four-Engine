@@ -107,7 +107,6 @@ public:
     int get_number_of_pieces() const;
     unique_ptr<position> get_a_future_position(int i); // MOVES the position object at index i of future_positions and returns!
     vector<unique_ptr<position>> get_future_positions(); // MOVES the future_positions vector and returns it!
-    int get_future_positions_size() const;
     coordinate get_last_move() const;
     coordinate find_best_move_for_comp(); // finds the best move to play in this current position, for the comp, and returns.
                                           // This function finds the move the comp should play against user in the game.
@@ -124,7 +123,6 @@ public:
     void set_evaluation (int evalP);
     void set_is_comp_turn (bool turnP);
     void set_depth(int depthP);
-    void set_future_positions_size(int i);
     void randomize_order_of_possible_moves(); // randomizes the order of elements in the possible_moves vector.
     void clean_up_amplifying_vectors(); // removes all elements in the 4 amplifying vectors that are no longer ' ' chars.
     void rearrange_possible_moves(const vector<coordinate>& front_moves); // puts the moves in front_moves at the front of
@@ -171,18 +169,18 @@ public:
 
     void remove_duplicates(vector<coordinate>& vec); // Removes duplicate elements from the vector.
 
-    void initialize_row_barriers(coordinate& lowest_comp_square_D, coordinate& lowest_good_comp_square_D,
-                                 coordinate& lowest_user_square_D, coordinate& lowest_good_user_square_D);
+    void initialize_row_barriers(int& lowest_comp_square_D, int& lowest_good_comp_square_D,
+                                 int& lowest_user_square_D, int& lowest_good_user_square_D);
                                     // Initializes row_barriers (private member vector) with 7 elements.
                                     // 1st element is row index of highest row (visually) allowed in column 0.
                                     // Also stores any squares in the 4 bool params as appropriate.
 
     void find_winning_squares(vector<coordinate>& vec, const shared_ptr<vector<treasure_spot>> squares_amplifying_3,
                               const shared_ptr<vector<treasure_spot>> squares_amplifying_2, char piece,
-                              coordinate& lowest_square_D, coordinate& lowest_good_square_D, bool evens_are_good);
+                              int& lowest_square_D, int& lowest_good_square_D, bool evens_are_good);
     // Function finds squares making a 4-in-a-row of piece and stores them in vec.
 
-    void update_D_squares(coordinate& lowest_square_D, coordinate& lowest_good_square_D,
+    void update_D_squares(int& lowest_square_D, int& lowest_good_square_D,
                           bool evens_are_good, const coordinate& candidate_square);
 
     // Functions specifically designed for, and only used in, the Versus Sim:
@@ -317,7 +315,6 @@ private:
     int alpha; // stores the best alternative found so far FOR THE COMPUTER at this time in the entire search. (i.e., highest val).
     int beta; // stores the best alternative found so far FOR THE USER at this time in the entire search (i.e., lowest val).
     int evaluation; // stores -1 if the computer is losing, 0 if the game is drawn, and +1 if the computer is winning.
-    int future_positions_size; // stores how many positions are in the future_positions vector.
 
     vector <unique_ptr<position>> future_positions; // stores pointers to all future positions one move ahead.
     // stored as pointers in order to be efficient with memory, as position objects are huge.
@@ -488,8 +485,6 @@ position::position(bool is_comp_turnP)
 
     evaluation = UNDEFINED;
 
-    future_positions_size = 0;
-
     // Now figure out the pre-hash value of the position. All the squares store ' ', so it's easy: just sum all the entries in
     // the hash_values_of_squares_empty static vector:
 
@@ -573,8 +568,6 @@ position::position(const string& boardP, bool is_comp_turnP, coordinate last_mov
     beta = UNDEFINED; // just some random value to signify that there is no beta value yet.
 
     evaluation = UNDEFINED; // just some random value to signify that there is no evaluation value yet.
-
-    future_positions_size = 0;
 
     squares_amplifying_comp_2 = make_shared<vector<treasure_spot>>();
 
@@ -690,7 +683,6 @@ position::position(shared_ptr<string> boardP, bool is_comp_turnP,
     alpha = alphaP;
     beta = betaP;
     evaluation = UNDEFINED; // just some random value to signify there is no evaluation value yet.
-    future_positions_size = 0;
 
     // 4 variables below will be used to reset the 4 amplifying vector pointers to what they were when they were passed to this function.
     // Purpose of this is to get them ready for the parent node to use them.
@@ -789,11 +781,6 @@ unique_ptr<position> position::get_a_future_position(int i)
 vector <unique_ptr<position>> position::get_future_positions()
 {
     return move(future_positions);
-}
-
-int position::get_future_positions_size() const
-{
-    return future_positions_size;
 }
 
 coordinate position::get_last_move() const
@@ -1062,11 +1049,6 @@ void position::set_depth(int depthP)
     depth = depthP;
 }
 
-void position::set_future_positions_size(int i)
-{
-    future_positions_size = i;
-}
-
 void position::randomize_order_of_possible_moves()
 {
     // I want to run through the first FOUR elements and swap them with a random element in the vector.
@@ -1107,9 +1089,7 @@ void position::rearrange_possible_moves(const vector<coordinate>& front_moves)
 
     possible_moves = replacement;
 
-    int end_size = possible_moves.size();
-
-    if (end_size != start_size)
+    if (possible_move.size() != start_size)
     {
         throw runtime_error("possible_moves.size changes.\n");
     }
@@ -1172,9 +1152,9 @@ void position::add_position_to_transposition_table(bool is_evaluation_indisputab
             if (temp.calculation_depth_from_this_position > current.calculation_depth_from_this_position)
             {
                 current = temp;
-
-                break;
             }
+
+            break;
         }
     }
 
@@ -1205,19 +1185,19 @@ void position::set_best_move_from_DB(const coordinate& val)
 
 bool position::did_computer_win() const
 {
-    return (!is_comp_turn && did_someone_win());
+    return !is_comp_turn && did_someone_win();
 }
 
 bool position::did_opponent_win() const
 {
-    return (is_comp_turn && did_someone_win());
+    return is_comp_turn && did_someone_win();
 }
 
 // Pre-condition: It has already been checked that no one has won the game.
 // Post-condition: The function will return true if the board is full... it is not guaranteed no one has four-in-a-row.
 bool position::is_game_drawn() const
 {
-    return (number_of_pieces == 42); // since a 7x6 board will have 42 pieces when filled up completely.
+    return number_of_pieces == 42; // since a 7x6 board will have 42 pieces when filled up completely.
 }
 
 bool position::evaluation_in_future_positions(int eval) const
@@ -1371,7 +1351,7 @@ void position::find_critical_moves_in_amplifying_vector(vector<coordinate>& crit
 
 bool position::is_in_bounds(const coordinate& square) const
 {
-     return (square.row >= 0 && square.row <= max_row_index && square.col >= 0 && square.col <= max_col_index);
+     return square.row >= 0 && square.row <= max_row_index && square.col >= 0 && square.col <= max_col_index;
 }
 
 bool position::in_coordinate_vector(const vector<coordinate>& vec, const coordinate& element)
@@ -1402,8 +1382,8 @@ void position::remove_duplicates(vector<coordinate>& vec)
      vec = replacement;
 }
 
-void position::initialize_row_barriers(coordinate& lowest_comp_square_D, coordinate& lowest_good_comp_square_D,
-                                       coordinate& lowest_user_square_D, coordinate& lowest_good_user_square_D)
+void position::initialize_row_barriers(int& lowest_comp_square_D, int& lowest_good_comp_square_D,
+                                       int& lowest_user_square_D, int& lowest_good_user_square_D)
 {
     // Find all squares that give both comp AND user a 4-in-a-row. Could be in 2-in-a-row vectors too.
 
@@ -1451,7 +1431,7 @@ void position::initialize_row_barriers(coordinate& lowest_comp_square_D, coordin
     }
 }
 
-void position::update_D_squares(coordinate& lowest_square_D, coordinate& lowest_good_square_D,
+void position::update_D_squares(int& lowest_square_D, int& lowest_good_square_D,
                                 bool evens_are_good, const coordinate& candidate_square)
 {
     // Pre-condition: It's already been checked that the candidate_square is in column D.
@@ -1461,26 +1441,25 @@ void position::update_D_squares(coordinate& lowest_square_D, coordinate& lowest_
         throw runtime_error("candidate square not in column D, in update_D_squares function");
     }
 
-    if (lowest_square_D.row == UNDEFINED || lowest_square_D.row < candidate_square.row)
+    if (lowest_square_D == UNDEFINED || lowest_square_D < candidate_square.row)
     {
-        lowest_square_D.row = candidate_square.row;
+        lowest_square_D = candidate_square.row;
     }
 
     // Now to see if the square should be the new lowest_good_square_D:
 
-    if ((candidate_square.row % 2 == 0 && evens_are_good) ||
-        (candidate_square.row % 2 != 0 && !evens_are_good))
+    if ((candidate_square.row % 2 == 0) == evens_are_good)
     {
-        if (lowest_good_square_D.row == UNDEFINED || lowest_good_square_D.row < candidate_square.row)
+        if (lowest_good_square_D == UNDEFINED || lowest_good_square_D < candidate_square.row)
         {
-            lowest_good_square_D.row = candidate_square.row;
+            lowest_good_square_D = candidate_square.row;
         }
     }
 }
 
 void position::find_winning_squares(vector<coordinate>& vec, const shared_ptr<vector<treasure_spot>> squares_amplifying_3,
                                     const shared_ptr<vector<treasure_spot>> squares_amplifying_2, char piece,
-                                    coordinate& lowest_square_D, coordinate& lowest_good_square_D, bool evens_are_good)
+                                    int& lowest_square_D, int& lowest_good_square_D, bool evens_are_good)
 {
     for (const treasure_spot& temp: *squares_amplifying_3)
     {
@@ -1517,12 +1496,7 @@ bool position::can_create_threat_with_D(char piece, int highest_row) const
 {
     // See if piece can create a threat in/using column D, anywhere at or below the highest_row.
 
-    char opponent_piece = 'U';
-
-    if (piece == 'U')
-    {
-        opponent_piece = 'C';
-    }
+    char opponent_piece = piece == 'U' ? 'C' : 'U';
 
 /*    int row = 0;
 
@@ -1531,7 +1505,7 @@ bool position::can_create_threat_with_D(char piece, int highest_row) const
         row = row_barriers[3] + 1;
     } */
 
-    for (int row = highest_row; row <= 5; row++)
+    for (int row = highest_row; row < 6; row++)
     {
         if ((*board)[row][3] == opponent_piece)
         {
@@ -2990,19 +2964,17 @@ void position::minimax()
             return; // Since this means the computer was just thinking while waiting for the user to make their move.
         }
 
-        coordinate current_move = possible_moves[i];
-
         // Now to make a new position object, with this updated board that's one move ahead.
 
         unique_ptr<position> pt = make_unique<position>(board, !is_comp_turn, depth + 1,
-                                                        number_of_pieces + 1, current_move,
+                                                        number_of_pieces + 1, possible_moves[i],
                                                         possible_moves, i, alpha, beta,
                                                         squares_amplifying_comp_2, squares_amplifying_comp_3,
                                                         squares_amplifying_user_2, squares_amplifying_user_3,
                                                         pre_hash_value_of_position, num_pieces_per_column, did_comp_go_first_in_the_game);
                                                         // Note that this position's 4 amplifying vectors are being sent.
                                                         // Any necessary additions to be made to the amplifying vectors
-                                                        // due to last_move (represented by current_move here) will be
+                                                        // due to last_move (represented by possible_moves[i] here) will be
                                                         // handled in the constructor.
                                                         // Also, this position's pre_hash_value_of_position variable is being sent.
                                                         // It will be updated appropriately in the constructor of the child position node.
@@ -3016,8 +2988,6 @@ void position::minimax()
                                                        // = child's, it is unstable (and shouldn't be stored in the TT).
 
         future_positions.push_back(move(pt));
-
-        future_positions_size ++;
 
         // Test if a winning move was found for the comp or user:
 
@@ -3154,8 +3124,7 @@ double position::find_revised_player_evaluation(const vector<coordinate_and_doub
 
     for (coordinate_and_double current: info_for_player_amplifying_squares)
     {
-        if ((current.square.row % 2 != 0 && did_player_move_first_in_the_game) ||
-            (current.square.row % 2 == 0 && !did_player_move_first_in_the_game))
+        if ((current.square.row % 2 != 0) == did_player_move_first_in_the_game)
         {
             // I used to only increase the square's value if it was a winning square.
             // But now in V.35, I'm doing it for squares amplifiying a 2-in-a-row too.
@@ -3181,13 +3150,10 @@ double position::find_revised_player_evaluation(const vector<coordinate_and_doub
 
 void position::smart_evaluation()
 {
-    coordinate lowest_comp_square_D = {UNDEFINED, 3};
-
-    coordinate lowest_good_comp_square_D = {UNDEFINED, 3};
-
-    coordinate lowest_user_square_D = {UNDEFINED, 3};
-
-    coordinate lowest_good_user_square_D = {UNDEFINED, 3};
+    int lowest_comp_square_D = UNDEFINED;
+    int lowest_good_comp_square_D = UNDEFINED;
+    int lowest_user_square_D = UNDEFINED;
+    int lowest_good_user_square_D = UNDEFINED;
 
     initialize_row_barriers(lowest_comp_square_D, lowest_good_comp_square_D,
                             lowest_user_square_D, lowest_good_user_square_D);
@@ -3203,12 +3169,12 @@ void position::smart_evaluation()
 
     //  VERSION 40:
 
-    if (lowest_good_comp_square_D.row != UNDEFINED &&
-        lowest_good_comp_square_D.row >= lowest_user_square_D.row)
+    if (lowest_good_comp_square_D != UNDEFINED &&
+        lowest_good_comp_square_D >= lowest_user_square_D)
     {
         // The comp has a good square, and the user has no square below it.
 
-        if (!can_create_threat_with_D('U', lowest_good_comp_square_D.row + 1))
+        if (!can_create_threat_with_D('U', lowest_good_comp_square_D + 1))
         {
             evaluation = INT_MAX;
 
@@ -3216,10 +3182,10 @@ void position::smart_evaluation()
         }
     }
 
-    if (lowest_good_user_square_D.row != UNDEFINED &&
-        lowest_good_user_square_D.row >= lowest_comp_square_D.row)
+    if (lowest_good_user_square_D != UNDEFINED &&
+        lowest_good_user_square_D >= lowest_comp_square_D)
     {
-        if (!can_create_threat_with_D('C', lowest_good_user_square_D.row + 1))
+        if (!can_create_threat_with_D('C', lowest_good_user_square_D + 1))
         {
             evaluation = INT_MIN;
 
