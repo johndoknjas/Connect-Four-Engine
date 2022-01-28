@@ -287,9 +287,26 @@ public:
 
     static void reset_board_of_bools(vector<vector<bool>>& board_of_bools, const vector<coordinate_and_double>& squares);
 
+    static int index(int row, int col);
+    // This function has the inline keyword, but it's only written in the function definition, not
+    // the declaration here. See https://isocpp.org/wiki/faq/inline-functions#inline-member-fns.
+    // Also, it doesn't matter whether an inline function is static or not, provided
+    // its a member of a class (like index is). See the quote from 12.2.1 in:
+    // https://stackoverflow.com/questions/44788412/c-inline-functions-declare-as-such-define-as-such-or-both-why
+
 private:
     // Private variables:
-    shared_ptr<string> board; // stores C's and U's and ' ', representing the computer and user's pieces and empty squares.
+    shared_ptr<string> board; 
+    // stores C's and U's and ' ', representing the computer and user's pieces and empty squares.
+    // The 'a' column of the connect four board is represented by the chars at indices 0 to 5, where index
+    // 0 represents the top of the column, and index 5 represents the bottom. The 'b' column is
+    // represented by indices 6 to 11, etc. Storing rows of the connect four board together is also
+    // of course an option, but squares in columns may be more often used together (e.g., spaces above
+    // an empty square in a column must also be empty).
+    // The board can be indexed similar to how the 2D vector was. For any row and col values you were using,
+    // instead of doing [row][col], just replace it by indexing the string board with [index_board(row, col)]. 
+    // This hides any abstraction done, which is simply the line col * 6 + row. Using this function,
+    // the string board can be treated with the same mental model as the 2D vector, for representing the board.
     bool is_comp_turn; // stores true if it's the computer's turn, and false if it's the user's turn.
     bool did_comp_go_first_in_the_game; // stores true if the computer started out moving first at the root node.
     int depth; // stores how deep this position is in the computer's calculations.
@@ -507,46 +524,24 @@ position::position(const string& boardP, bool is_comp_turnP, coordinate last_mov
 
     board = make_shared<string>(boardP);
 
-    // TODO - for rest of this file, continue searching for "board" and
-    // replacing 2D vector stuff with string stuff.
-
     is_comp_turn = is_comp_turnP;
 
     depth = 0;
 
     calculation_depth_from_this_position = depth_limit - depth;
 
-    // FIGURE OUT NUMBER_OF_PIECES, USING AN EMBEDDED FOR LOOP TO RUN THROUGH THE ENTIRE BOARD.
-
-    number_of_pieces = 0;
-
-    for (int row = 0; row <= max_row_index; row++)
-    {
-        for (int col = 0; col <= max_col_index; col++)
-        {
-            if ((*board)[row][col] != ' ')
-            {
-                number_of_pieces ++;
-            }
-        }
-    }
+    number_of_pieces = 42 - count((*board).begin(), (*board).end(), ' ');
 
     // Initialize num_pieces_per_column:
 
-    num_pieces_per_column = make_shared<vector<int>>();
-
-    for (int col = 0; col <= max_col_index; col++)
-    {
-        num_pieces_per_column->push_back(0);
-    }
+    num_pieces_per_column = make_shared<vector<int>>(7, 0);
 
     // Now figure out the number of pieces in each column, to initialize the num_pieces_per_column vector:
-
-    for (int col = 0; col <= max_col_index; col++)
+    for (int col = 0; col <= max_col_index; ++col)
     {
-        for (int row = 0; row <= max_row_index; row++)
+        for (int row = 0; row <= max_row_index; ++row)
         {
-            if ((*board)[row][col] != ' ')
+            if ((*board)[index(row, col)] != ' ')
             {
                 (*num_pieces_per_column)[col] ++;
             }
@@ -555,15 +550,13 @@ position::position(const string& boardP, bool is_comp_turnP, coordinate last_mov
 
     last_move = last_moveP;
 
-    // INITIALIZE THE POSSIBLE_MOVES VECTOR.
-    // FIGURE OUT ALL POSSIBLE MOVES IN THIS POSITION.
-    // THEN, RANDOMIZE THEIR ORDER IN THE VECTOR.
+    // Figure out the possible moves in this position, and then randomize their order:
 
     for (int col = 0; col <= max_col_index; col++)
     {
         for (int row = max_row_index; row >= 0; row--)
         {
-            if ((*board)[row][col] == ' ') // found the legal move in this column:
+            if ((*board)[index(row, col)] == ' ') // found the legal move in this column:
             {
                 coordinate temp;
                 temp.row = row;
@@ -614,12 +607,12 @@ position::position(const string& boardP, bool is_comp_turnP, coordinate last_mov
     {
         for (int col = 0; col <= max_col_index; col++)
         {
-            if ((*board)[row][col] == ' ')
+            if ((*board)[index(row, col)] == ' ')
             {
                 pre_hash_value_of_position += hash_values_of_squares_empty[row][col];
             }
 
-            else if ((*board)[row][col] == 'C')
+            else if ((*board)[index(row, col)] == 'C')
             {
                 pre_hash_value_of_position += hash_values_of_squares_with_C[row][col];
             }
@@ -654,7 +647,7 @@ position::position(const string& boardP, bool is_comp_turnP, coordinate last_mov
     analyze_last_move(); // will analyze the last_move, and then call minimax() if the game isn't over.
 }
 
-position::position(shared_ptr<vector<vector<char>>> boardP, bool is_comp_turnP,
+position::position(shared_ptr<string> boardP, bool is_comp_turnP,
                    int depthP, int number_of_piecesP, coordinate last_moveP,
                    const vector<coordinate>& possible_movesP, int possible_moves_index,
                    int alphaP, int betaP,
@@ -667,24 +660,14 @@ position::position(shared_ptr<vector<vector<char>>> boardP, bool is_comp_turnP,
 
     did_comp_go_first_in_the_game = did_comp_go_first_in_the_gameP;
 
-    board = boardP; // Still have to make last_move!
+    board = boardP; // Still have to make last_move.
 
-    if ((*board)[last_moveP.row][last_moveP.col] != ' ') // shouldn't have made last move yet...
+    if ((*board)[index(last_moveP.row, last_moveP.col)] != ' ') // shouldn't have made last move yet...
     {
-        throw runtime_error("Board with last_move already made was passed to third constructor!\n");
+        throw runtime_error("Board with last_move already made was passed to third constructor.\n");
     }
 
-    if (is_comp_turnP)
-    {
-        // Comp's turn now, so user just moved:
-
-        (*board)[last_moveP.row][last_moveP.col] = 'U';
-    }
-
-    else
-    {
-        (*board)[last_moveP.row][last_moveP.col] = 'C';
-    }
+    (*board)[index(last_moveP.row, last_moveP.col)] = is_comp_turnP ? 'U' : 'C';
 
     is_comp_turn = is_comp_turnP;
 
@@ -728,11 +711,12 @@ position::position(shared_ptr<vector<vector<char>>> boardP, bool is_comp_turnP,
 
     pre_hash_value_of_position = pre_hash_value_of_positionP;
 
-    // But now, pre_hash_value_of_position must be adjusted to account for a 'C' or 'U' being at last_move's coordinates in board, instead of ' ':
+    // But now, pre_hash_value_of_position must be adjusted to account for a 'C' or 'U' being 
+    // at last_move's coordinates in board, instead of ' ':
 
     pre_hash_value_of_position -= hash_values_of_squares_empty[last_move.row][last_move.col];
 
-    if ((*board)[last_move.row][last_move.col] == 'C')
+    if ((*board)[index(last_move.row, last_move.col)] == 'C')
     {
         pre_hash_value_of_position += hash_values_of_squares_with_C[last_move.row][last_move.col];
     }
@@ -749,7 +733,8 @@ position::position(shared_ptr<vector<vector<char>>> boardP, bool is_comp_turnP,
 
     analyze_last_move(); // will analyze the last_move, and then call minimax() if the game isn't over.
 
-    (*board)[last_move.row][last_move.col] = ' '; // since board is a pointer. This is repairing board for the parent node.
+    (*board)[index(last_move.row, last_move.col)] = ' '; // since board is a pointer. 
+    // This is repairing board for the parent node to use it.
 
     squares_amplifying_comp_2->resize(static_cast<int>(old_size_of_squares_amplifying_comp_2));
     squares_amplifying_comp_3->resize(static_cast<int>(old_size_of_squares_amplifying_comp_3));
@@ -765,9 +750,15 @@ vector<vector<char>> position::get_board() const
 {
     // Return a copy of the board:
 
-    vector<vector<char>> boardP = *board;
+    vector<vector<char>> board_as_vec(6, vector<char>(7));
 
-    return boardP;
+    for (int r = 0; r < 6; ++r) {
+        for (int c = 0; c < 7; ++c) {
+            board_as_vec[r][c] = (*board)[index(r, c)];
+        }
+    }
+
+    return board_as_vec;
 }
 
 int position::get_evaluation() const
@@ -848,9 +839,9 @@ coordinate position::find_best_move_for_comp()
 
         for (const coordinate& current: possible_moves)
         {
-            vector<vector<char>> copy_board = *board;
+            string copy_board = *board;
 
-            copy_board[current.row][current.col] = 'C';
+            copy_board[index(current.row, current.col)] = 'C';
 
             unique_ptr<position> pt = make_unique<position>(copy_board, !is_comp_turn, current,
                                                             *squares_amplifying_comp_2, *squares_amplifying_comp_3,
@@ -883,9 +874,9 @@ coordinate position::find_best_move_for_comp()
 
         for (const coordinate& current_move: possible_moves)
         {
-            vector<vector<char>> assisting_board = *board;
+            string assisting_board = *board;
 
-            assisting_board[current_move.row][current_move.col] = 'C';
+            assisting_board[index(current_move.row, current_move.col)] = 'C';
 
             unique_ptr<position> pt = make_unique<position>(assisting_board, !is_comp_turn, current_move, empty_amplifying_vector,
                                                             empty_amplifying_vector, empty_amplifying_vector, empty_amplifying_vector);
@@ -940,7 +931,7 @@ coordinate position::find_best_move_for_comp()
     // First check if comp can win on the spot:
     for (const coordinate& current_move: possible_moves)
     {
-        (*board)[current_move.row][current_move.col] = 'C';
+        (*board)[index(current_move.row, current_move.col)] = 'C';
 
         coordinate old_last_move = last_move;
 
@@ -948,7 +939,7 @@ coordinate position::find_best_move_for_comp()
 
         bool does_move_win = did_someone_win();
 
-        (*board)[current_move.row][current_move.col] = ' ';
+        (*board)[index(current_move.row, current_move.col)] = ' ';
 
         last_move = old_last_move;
 
@@ -966,7 +957,7 @@ coordinate position::find_best_move_for_comp()
         {
             // (*board)[current_move.row][current_move.col] = 'C'; no need to place a piece here for checking the square above.
 
-            (*board)[current_move.row-1][current_move.col] = 'U';
+            (*board)[index(current_move.row-1, current_move.col)] = 'U';
 
             coordinate old_last_move = last_move;
 
@@ -974,12 +965,12 @@ coordinate position::find_best_move_for_comp()
 
             bool did_opponent_have_a_square_above = did_someone_win();
 
-            (*board)[current_move.row-1][current_move.col] = 'C';
+            (*board)[index(current_move.row-1, current_move.col)] = 'C';
 
             bool did_computer_have_a_square_above = did_someone_win();
 
-            (*board)[current_move.row-1][current_move.col] = ' ';
-            (*board)[current_move.row][current_move.col] = ' '; // redundant now since already empty, but leaving in anyway.
+            (*board)[index(current_move.row-1, current_move.col)] = ' ';
+            (*board)[index(current_move.row, current_move.col)] = ' '; // redundant now since already empty, but leaving in anyway.
 
             last_move = old_last_move;
 
@@ -1047,9 +1038,13 @@ coordinate position::get_best_move_from_DB() const
 
 // SETTERS:
 
-void position::set_board(const vector <vector<char>>& boardP)
+void position::set_board(const vector<vector<char>>& boardP)
 {
-    *board = boardP;
+    for (int r = 0; r < 6; ++r) {
+        for (int c = 0; c < 7; ++c) {
+            (*board)[index(r, c)] = boardP[r][c];
+        }
+    }
 }
 
 void position::set_evaluation (int evalP)
@@ -1140,7 +1135,7 @@ void position::add_position_to_transposition_table(bool is_evaluation_indisputab
     }
 
     position_info_for_TT temp;
-    temp.board = *board;
+    temp.board = *board; // TODO - continue here for changing board usage from a 2D vector to a string.
     temp.evaluation = evaluation;
     temp.calculation_depth_from_this_position = calculation_depth_from_this_position;
     temp.is_evaluation_indisputable = is_evaluation_indisputable;
@@ -2319,6 +2314,10 @@ void position::reset_board_of_bools(vector<vector<bool>>& board_of_bools, const 
     {
         board_of_bools[current.square.row][current.square.col] = false;
     }
+}
+
+inline int position::index(int row, int col) {
+    return col * 6 + row;
 }
 
 // PRIVATE METHODS:

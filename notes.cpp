@@ -111,7 +111,22 @@
           then the destructor for the position class should call the string destructor.
 
         - https://www.geeksforgeeks.org/references-in-c/
-          
+
+- See where inlining may increase performance (don't do excessive inlining though).
+  Inlining may be helpful for small functions that are called many times.
+  Use the inline keyword -- although note that this is just a suggestion to the compiler to inline,
+  it doesn't force it to. To force gcc, also use: __attribute__((always_inline)).
+  https://stackoverflow.com/questions/8381293/how-do-i-force-gcc-to-inline-a-function
+    - Another option is to just use the inline keyword, which hints/suggests to the compiler that the code
+      should be inlined. Especially after compiling with
+      -O2, gcc is very likely to inline your function (if it doesn't, probably has a good reason?).
+      -O2 includes the -finline-functions flag (https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html).
+      You can always check the resulting assembly with the link below:
+  
+  https://gcc.godbolt.org/
+  Good resource - allows you to see the assembly output by gcc, mapped to the C++ code.
+
+  Using the compiler flag -Winline with gcc will warn you when a function won't be inlined.
 
 ----------------------------------------------------------------------------
 Jan 2022 onward stuff above this line.
