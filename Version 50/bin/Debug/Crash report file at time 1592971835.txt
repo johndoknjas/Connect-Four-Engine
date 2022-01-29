@@ -1,1 +1,0 @@
-The Python application ended because the signal.txt file was created, so the C++ program  ended as well.
