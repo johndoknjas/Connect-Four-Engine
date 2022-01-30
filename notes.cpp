@@ -1,42 +1,41 @@
-/* Version 50
+/* Version 51 - Zobrist Hashing:
+- Functional changes so far:
+  - Modify the code to use zobrist hashing (https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-5-zobrist-hashing/). 
+    Somewhat close to what you already have, with two main differences. First, store random numbers from 1 to a million in the 
+    hash table, using rand(). Second, xor the hash value of the move made with the hash value, instead of adding it. 
+    Also, note that pre_hash_value is now no longer needed.
+      - Result: Against V.50 in a depth 9 match of 500 trials, V.51 was around 1.05 times faster. It took on average 
+        0.0313273 seconds/move, while V.50 took 0.0329071 seconds/move.
 
-- Make it so that all the user's input is done via pygame (either with all buttons or
-  some text entry in pygame). No input should be done via console anymore.
-    - Note: the default time for the engine to think will be 1.0s.
+- Ways to build on this version:
+  - Although the zobrist hashing increased the speed by 5%, there may be potential for more. E.g., the comment and answer
+    to the following question suggest making the TT size a prime number:
+    https://stackoverflow.com/questions/62541946/collisions-in-a-zobrist-transposition-table
+    I'm still not exactly sure what the comment means by a power of 2 for the size "throwing away the upper bits of the hash value"
+    though.
+  - Could opt to no longer store the 2D vector/string board in the hash table. Instead, maybe just store a few additional
+    zobrist hashes for each object in a bucket, using different randomly generated zobrist tables. This can resolve
+    collisions. The probability of two objects being in a bucket, as well as two more of the same zobrist hashes, should be something
+    like 1 million squared. Even higher, if for the secondary zobrist hashes, you take random numbers in the range of 1
+    to the max size of a long long int (2^64).
+        - OR: store two unsigned long longs as members of each node. The first long long is a 64-bit integer, where 42 of its
+          bits = 1 when there is a 'C' in the corresponding square, and 0 otherwise. The second long long is the same size,
+          and 42 of its bits store 1 if there is a 'U'. These two variables should hold the same data as a 2D vector of chars / string.
+        - So, maybe it's more efficient to store and compare these two long longs in the TT, rather than the 2D vector or a string.
+          Although, it's probably not a huge performance increase, since two long longs is something like 
+          ~38% the size of a 2D vector of chars (64*2 bits vs 42*8 bits + vector overhead).
+        - Note that for the two long longs, the way you'd keep track of the board state is by the parent passing a copy of the
+          long longs to the child, and then depending on whether the comp or user has just moved, one of the long longs
+          gets its corresponding bit (for the last_move square) set ("set" means make it 1, and in this case it would be 0 before
+          since the square was previously empty).
+            - Bit setting:
+              - https://stackoverflow.com/questions/47981/how-do-you-set-clear-and-toggle-a-single-bit
+              - https://www.geeksforgeeks.org/set-clear-and-toggle-a-given-bit-of-a-number-in-c/
+              - Probably prefer the first answer from the SO link, since it seems to account for unsigned long long stuff.
+  - Could get rid of the indices_of_elements_in_TT vector, and just reset the vector after each game. If this is fast, then
+    it would maybe be a bit efficient to do this (since now indices_of_elements doesn't need to have push_back called on it
+    everytime a new bucket is used in the TT).
 
--  Instead of picking a position from the MovesReachingPositions textfile, I made a vector
-   storing playable positions between 4-7 ply from the DB. Then on each game, one
-   of these starting positions is chosen at random.
-
-- Display text instructions in pygame, not in the console.
-    - When finishing a game, the displayed pygame board (so the circles) are shrunk
-      all proportionately. Then the freed up space is used to write
-      to the user.
-
-- Add a sound effect for when a player makes a move.
-        - There are two wav files the user can toggle between.
-
-- Displayed the ongoing score at the start of the program, around the middle of the screen.
-        - Also displayed a message saying that the user can
-          toggle between sound effects with the "1" and "2" keys.
-
-- For the console output in Python, it is only displayed if a "production_mode" boolean
-  variable is set to False. In the production Pygame application, there shouldn't be
-  any console output at all.
-
-- Playing an error sound effect when the user tries to make an illegal move.
-
-- Before starting to play a particular game with the user, the starting position is
-  looked up in the DB, and it is ensured that it is between -10 and 10 in the DB.
-  If it isn't then there's an error, since all the starting sets were supposed to be
-  within [-10, 10] in the DB. So throw a string error.
-
-- When the application starts running, the Python program removes
-  any leftover crash report textfile(s).
-  Meanwhile, the C++ program removes the communication textfiles when the
-  application finishes.
-    - Note that I'm still calling the function to do this at the start of the
-      application too, just in case some communication textfiles are there.
 
 
     ******IDEAS FOR FUTURE VERSIONS******:
@@ -363,7 +362,7 @@
             - Actually, even when depth limit was used for thinking, quiescence search sometimes/often caused the search to go further.
             - So even then, giving the side to move a small amount (like +/- 5 or something) would have been useful.
 
-      -	For a stacked threat of two 3-in-a-rows above the opponent’s own amplifying square for a 3-in-a-row,
+      -	For a stacked threat of two 3-in-a-rows above the opponent's own amplifying square for a 3-in-a-row,
             ensure the two groups have equal value, if you can!
 
             -	The group of two above should NOT be worth more.
