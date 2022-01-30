@@ -1,25 +1,37 @@
-/* Version 51 (or 52, depending on which branch is merged into master first):
+/* Version 51 - Zobrist Hashing:
 - Functional changes so far:
-  - 
-- Currently working on:
   - Modify the code to use zobrist hashing (https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-5-zobrist-hashing/). 
     Somewhat close to what you already have, with two main differences. First, store random numbers from 1 to a million in the 
     hash table, using rand(). Second, xor the hash value of the move made with the hash value, instead of adding it. 
     Also, note that pre_hash_value is now no longer needed.
+      - Result: Against V.50 in a depth 9 match of 500 trials, V.51 was around 1.05 times faster. It took on average 
+        0.0313273 seconds/move, while V.50 took 0.0329071 seconds/move.
+
 - Ways to build on this version:
-  - Can increase the hash table's size (by a factor of 10x, or even higher). With the hash function I was using up until now,
-    increasing the hash table's size didn't help a whole lot. But now with zobrist hashing, 
-    the increase in hash table size will have a measurable effect on bucket sizes. Also, allocating/deallocating a vector
-    of size 10 million seems to barely take any time.
-        - Actually, it turns out a size of 10 million helps with the hash function currently being used, as long as
-          the stopping condition in the while loop of the hash function is increased by a factor of 10 as well.
-        - But in any case, increasing the TT size by 10x will yield an improvement with zobrist hashing - it's just that
-          it would if zobrist hashing wasn't used as well.
+  - Although the zobrist hashing increased the speed by 5%, there may be potential for more. E.g., the comment and answer
+    to the following question suggest making the TT size a prime number:
+    https://stackoverflow.com/questions/62541946/collisions-in-a-zobrist-transposition-table
+    I'm still not exactly sure what the comment means by a power of 2 for the size "throwing away the upper bits of the hash value"
+    though.
   - Could opt to no longer store the 2D vector/string board in the hash table. Instead, maybe just store a few additional
     zobrist hashes for each object in a bucket, using different randomly generated zobrist tables. This can resolve
     collisions. The probability of two objects being in a bucket, as well as two more of the same zobrist hashes, should be something
     like 1 million squared. Even higher, if for the secondary zobrist hashes, you take random numbers in the range of 1
     to the max size of a long long int (2^64).
+        - OR: store two unsigned long longs as members of each node. The first long long is a 64-bit integer, where 42 of its
+          bits = 1 when there is a 'C' in the corresponding square, and 0 otherwise. The second long long is the same size,
+          and 42 of its bits store 1 if there is a 'U'. These two variables should hold the same data as a 2D vector of chars / string.
+        - So, maybe it's more efficient to store and compare these two long longs in the TT, rather than the 2D vector or a string.
+          Although, it's probably not a huge performance increase, since two long longs is something like 
+          ~38% the size of a 2D vector of chars (64*2 bits vs 42*8 bits + vector overhead).
+        - Note that for the two long longs, the way you'd keep track of the board state is by the parent passing a copy of the
+          long longs to the child, and then depending on whether the comp or user has just moved, one of the long longs
+          gets its corresponding bit (for the last_move square) set ("set" means make it 1, and in this case it would be 0 before
+          since the square was previously empty).
+            - Bit setting:
+              - https://stackoverflow.com/questions/47981/how-do-you-set-clear-and-toggle-a-single-bit
+              - https://www.geeksforgeeks.org/set-clear-and-toggle-a-given-bit-of-a-number-in-c/
+              - Probably prefer the first answer from the SO link, since it seems to account for unsigned long long stuff.
   - Could get rid of the indices_of_elements_in_TT vector, and just reset the vector after each game. If this is fast, then
     it would maybe be a bit efficient to do this (since now indices_of_elements doesn't need to have push_back called on it
     everytime a new bucket is used in the TT).
