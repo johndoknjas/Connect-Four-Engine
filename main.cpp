@@ -182,8 +182,6 @@ unique_ptr<position> get_to_chosen_starting_position(bool does_comp_go_first, co
         pt = position::think_on_game_position(temp_board, !pt->get_is_comp_turn(), set_of_moves[i], pt->get_squares_amplifying_comp_2(),
                                               pt->get_squares_amplifying_comp_3(), pt->get_squares_amplifying_user_2(),
                                               pt->get_squares_amplifying_user_3(), true, placeholder, false);
-                                              // Sending "true" for starting new game since I don't want the TT used. In order to be fair, the comp
-                                              // shouldn't be able to use calculations it did to get to the starting position.
     }
 
     if (position::thinking_time != old_thinking_time)
