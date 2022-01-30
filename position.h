@@ -129,8 +129,6 @@ public:
     void rearrange_possible_moves(const vector<coordinate>& front_moves); // puts the moves in front_moves at the front of
                                                                           // the possible_moves vector of the calling object.
                                                                           // All these moves should already be in possible_moves.
-    void initialize_hash_value_of_position(); // multiplies the pre_hash_value_of_position to >= 1,000,000, rounds to an int, and
-                                              // sets hash_value_of_position to the result.
 
     void add_position_to_transposition_table(bool is_evaluation_indisputable);
     // Adds this position's board (the key) and evaluation to the appropriate index in
@@ -223,11 +221,10 @@ public:
 
     static const vector<vector<int>> random_values_for_squares_with_C;
     static const vector<vector<int>> random_values_for_squares_with_U;
-    static const vector<vector<int>> random_values_for_empty_squares;
-    // These three vectors each contain 42 random numbers, to be used for zobrist hashing.
+    // These vectors each contain 42 random numbers, to be used for zobrist hashing.
 
     static vector<vector<position_info_for_TT>> transposition_table; // A position's key & evaluation get stored here, at the appropriate
-                                                                     // index (i.e., it's hash value). The inner vector is to deal with possible
+                                                                     // index (i.e., its hash value). The inner vector is to deal with possible
                                                                      // collisions. Multiple positions can be stored at the same
                                                                      // index in the outer vector via the inner vector.
 
@@ -249,7 +246,7 @@ public:
     // Public static methods:
 
     static vector<vector<int>> get_board_of_random_ints();
-    // Returns a 7x6 2-D vector of doubles, storing the hash value for each square (assuming char piece is in the square).
+    // Returns a 7x6 2-D vector of ints, storing a random value for each square.
 
     static double cotangent_with_degrees(double angle_in_degrees); // Returns the cotangent of the angle in degrees.
 
@@ -315,11 +312,7 @@ private:
                               // NOTE: This member is only initialized in smart_evaluation(), aka when depth limit is reached,
                               // since it has no use before then.
 
-    double pre_hash_value_of_position; // stores the double value the position's hash value has, before being multiplied to >= 1,000,000 and
-                                       // rounded to an int. Pass this variable on to child nodes! Since then they only have to deal with
-                                       // the 'C' or 'U' replacing the ' ' at last_move's coordinates in board.
-
-    int hash_value_of_position; // equal to the result of the above variable being multiplied to >= 1,000,000 and rounded to an int.
+    int hash_value_of_position;
 
     bool is_a_pruned_branch; // Initialized to false - stores true if this node (and all its children) gets pruned via alpha-beta pruning.
 
@@ -389,12 +382,15 @@ int position::depth_limit = 1; // starts off at 1 every time the Engine thinks (
 bool position::stop_signal = false;
 const double position::PI = 3.14159265359;
 
-vector<vector<position_info_for_TT>> position::transposition_table(1000005);
+vector<vector<position_info_for_TT>> position::transposition_table(1048577); // The size is this because the hash
+// value will be XORed with numbers up to 1 million. 1,000,000 in binary is 20 digits, so the max value the hash
+// could be is a 20 digit binary number consisting of all 1's. This is equivalent to 2^20-1 = 1048575. I've made the TT
+// one spot bigger than needed, just in case. Its last spot (index 1048576) should never end up being used.
+// If you decide to use random numbers up to 10 million, then make the TT 16777215 or 16777216 (to be safe) in size.
 vector<int> position::indices_of_elements_in_TT;
 
 const vector<vector<int>> position::random_values_for_squares_with_C = get_board_of_random_ints();
 const vector<vector<int>> position::random_values_for_squares_with_U = get_board_of_random_ints();
-const vector<vector<int>> position::random_values_for_empty_squares = get_board_of_random_ints();
 
 bool position::surpassed_DB = false;
 
@@ -472,8 +468,8 @@ position::position(bool is_comp_turnP)
         temp.row = max_row_index;
         possible_moves.push_back(temp);
     }
- //   randomize_order_of_possible_moves();   FINALLY TAKING OUT RANDOMNESS
- // Besides, in most cases possible_moves will just be set to a possible moves vector from an earlier duplicate in the hash table.
+    //   randomize_order_of_possible_moves(); No longer using randomness here.
+    // Besides, in most cases possible_moves will just be set to a possible moves vector from an earlier duplicate in the TT.
 
     alpha = UNDEFINED;
 
@@ -483,17 +479,7 @@ position::position(bool is_comp_turnP)
 
     future_positions_size = 0;
 
-    pre_hash_value_of_position = 0.0;
-
-    for (int row = 0; row <= max_row_index; row++)
-    {
-        for (int col = 0; col <= max_col_index; col++)
-        {
-            //pre_hash_value_of_position += hash_values_of_squares_empty[row][col]; // since this vector has same dimensions as board... 7x6.
-        }
-    }
-
-    initialize_hash_value_of_position(); // uses pre_hash_value_of_position above to get an int >= 1,000,000 to set hash_value_of_position to.
+    hash_value_of_position = 0;
 
     // Now, I don't need to check if someone won, since this constructor starts the entire game.
     // I also don't need to call the analyze_last_move() function, since there is no last_move yet!
@@ -631,6 +617,8 @@ position::position(const vector <vector<char>>& boardP, bool is_comp_turnP, coor
                                    // clean-up there (not efficient!).
 
     // Now figure out the pre-hash value of the position:
+    // TODO - get rid of the pre_hash_value thing, and just xor the hash_value_of_position
+    // with the corresponding zobrist square of last_move.
 
     pre_hash_value_of_position = 0.0;
 
@@ -1142,18 +1130,6 @@ void position::rearrange_possible_moves(const vector<coordinate>& front_moves)
     {
         throw runtime_error("possible_moves.size changes.\n");
     }
-}
-
-void position::initialize_hash_value_of_position()
-{
-    double val = pre_hash_value_of_position;
-
-    while (val < 100000.0)
-    {
-        val *= 10.0;
-    }
-
-    hash_value_of_position = static_cast<int>(round(val));
 }
 
 void position::add_position_to_transposition_table(bool is_evaluation_indisputable)

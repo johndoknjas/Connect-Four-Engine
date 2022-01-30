@@ -11,13 +11,18 @@
     increasing the hash table's size didn't help a whole lot. But now with zobrist hashing, 
     the increase in hash table size will have a measurable effect on bucket sizes. Also, allocating/deallocating a vector
     of size 10 million seems to barely take any time.
+        - Actually, it turns out a size of 10 million helps with the hash function currently being used, as long as
+          the stopping condition in the while loop of the hash function is increased by a factor of 10 as well.
+        - But in any case, increasing the TT size by 10x will yield an improvement with zobrist hashing - it's just that
+          it would if zobrist hashing wasn't used as well.
   - Could opt to no longer store the 2D vector/string board in the hash table. Instead, maybe just store a few additional
     zobrist hashes for each object in a bucket, using different randomly generated zobrist tables. This can resolve
     collisions. The probability of two objects being in a bucket, as well as two more of the same zobrist hashes, should be something
     like 1 million squared. Even higher, if for the secondary zobrist hashes, you take random numbers in the range of 1
     to the max size of a long long int (2^64).
-- 
-
+  - Could get rid of the indices_of_elements_in_TT vector, and just reset the vector after each game. If this is fast, then
+    it would maybe be a bit efficient to do this (since now indices_of_elements doesn't need to have push_back called on it
+    everytime a new bucket is used in the TT).
 
 
 
