@@ -49,6 +49,9 @@
   - Could get rid of the indices_of_elements_in_TT vector, and just reset the vector after each game. If this is fast, then
     it would maybe be a bit efficient to do this (since now indices_of_elements doesn't need to have push_back called on it
     everytime a new bucket is used in the TT).
+ 
+  - Note that making the TT bigger will reduce collisions (both for zobrist hashing and the old hashing method you were doing before), but using a TT
+    at like size 10 million may actually slow down the engine. So for now, a size of around 1 million seems like a relatively good sweet spot.
 
 
 
@@ -97,6 +100,10 @@
               could continue to play around with it to see if there are any ideas to improve it.
             - It would be interesting to see which buckets in the TT get filled. E.g., are
               they mainly ones between 100,000 - 200,000, or 400,000 - 600,000, etc.
+
+- See if, when in a time limited search, it's now beneficial in some new places to let the engine search, instead of
+  relying on the DB. The reason for checking this out is that this new computer is a lot faster, so maybe there's some
+  instances where the computer can calculate further than the DB goes, in certain positions.
 
 - For declaring raw arrays / std::arrays, if you don't use new then they should point to the stack or to static memory. If such
   arrays are fields of the Position class though, and if you can't avoid declaring objects of Position on the heap (otherwise a 
