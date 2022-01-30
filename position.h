@@ -221,9 +221,10 @@ public:
     static bool stop_signal; // used for multithreading (thinking while waiting for the user to move).
     static const double PI; // PI to 11 decimal places.
 
-    static const vector<vector<double>> hash_values_of_squares_with_C; // stores the double hash value of each square in the board, if it stores 'C'.
-    static const vector<vector<double>> hash_values_of_squares_with_U; // stores the double hash value of each square in the board, if it stores 'U'.
-    static const vector<vector<double>> hash_values_of_squares_empty; // stores the double hash value of each square in the board, if it stores ' '.
+    static const vector<vector<int>> random_values_for_squares_with_C;
+    static const vector<vector<int>> random_values_for_squares_with_U;
+    static const vector<vector<int>> random_values_for_empty_squares;
+    // These three vectors each contain 42 random numbers, to be used for zobrist hashing.
 
     static vector<vector<position_info_for_TT>> transposition_table; // A position's key & evaluation get stored here, at the appropriate
                                                                      // index (i.e., it's hash value). The inner vector is to deal with possible
@@ -247,7 +248,7 @@ public:
 
     // Public static methods:
 
-    static vector<vector<double>> find_hash_values_for_all_squares_in_board(char piece);
+    static vector<vector<int>> get_board_of_random_ints();
     // Returns a 7x6 2-D vector of doubles, storing the hash value for each square (assuming char piece is in the square).
 
     static double cotangent_with_degrees(double angle_in_degrees); // Returns the cotangent of the angle in degrees.
@@ -388,12 +389,12 @@ int position::depth_limit = 1; // starts off at 1 every time the Engine thinks (
 bool position::stop_signal = false;
 const double position::PI = 3.14159265359;
 
-const vector<vector<double>> position::hash_values_of_squares_with_C = find_hash_values_for_all_squares_in_board('C');
-const vector<vector<double>> position::hash_values_of_squares_with_U = find_hash_values_for_all_squares_in_board('U');
-const vector<vector<double>> position::hash_values_of_squares_empty = find_hash_values_for_all_squares_in_board(' ');
-
 vector<vector<position_info_for_TT>> position::transposition_table(1000005);
 vector<int> position::indices_of_elements_in_TT;
+
+const vector<vector<int>> position::random_values_for_squares_with_C = get_board_of_random_ints();
+const vector<vector<int>> position::random_values_for_squares_with_U = get_board_of_random_ints();
+const vector<vector<int>> position::random_values_for_empty_squares = get_board_of_random_ints();
 
 bool position::surpassed_DB = false;
 
@@ -482,16 +483,13 @@ position::position(bool is_comp_turnP)
 
     future_positions_size = 0;
 
-    // Now figure out the pre-hash value of the position. All the squares store ' ', so it's easy: just sum all the entries in
-    // the hash_values_of_squares_empty static vector:
-
     pre_hash_value_of_position = 0.0;
 
     for (int row = 0; row <= max_row_index; row++)
     {
         for (int col = 0; col <= max_col_index; col++)
         {
-            pre_hash_value_of_position += hash_values_of_squares_empty[row][col]; // since this vector has same dimensions as board... 7x6.
+            //pre_hash_value_of_position += hash_values_of_squares_empty[row][col]; // since this vector has same dimensions as board... 7x6.
         }
     }
 
@@ -642,17 +640,17 @@ position::position(const vector <vector<char>>& boardP, bool is_comp_turnP, coor
         {
             if ((*board)[row][col] == ' ')
             {
-                pre_hash_value_of_position += hash_values_of_squares_empty[row][col];
+                //pre_hash_value_of_position += hash_values_of_squares_empty[row][col];
             }
 
             else if ((*board)[row][col] == 'C')
             {
-                pre_hash_value_of_position += hash_values_of_squares_with_C[row][col];
+                //pre_hash_value_of_position += hash_values_of_squares_with_C[row][col];
             }
 
             else // stores 'U':
             {
-                pre_hash_value_of_position += hash_values_of_squares_with_U[row][col];
+                //pre_hash_value_of_position += hash_values_of_squares_with_U[row][col];
             }
         }
     }
@@ -756,16 +754,16 @@ position::position(shared_ptr<vector<vector<char>>> boardP, bool is_comp_turnP,
 
     // But now, pre_hash_value_of_position must be adjusted to account for a 'C' or 'U' being at last_move's coordinates in board, instead of ' ':
 
-    pre_hash_value_of_position -= hash_values_of_squares_empty[last_move.row][last_move.col];
+    //pre_hash_value_of_position -= hash_values_of_squares_empty[last_move.row][last_move.col];
 
     if ((*board)[last_move.row][last_move.col] == 'C')
     {
-        pre_hash_value_of_position += hash_values_of_squares_with_C[last_move.row][last_move.col];
+        //pre_hash_value_of_position += hash_values_of_squares_with_C[last_move.row][last_move.col];
     }
 
     else // 'U' at last_move's coordinates:
     {
-        pre_hash_value_of_position += hash_values_of_squares_with_U[last_move.row][last_move.col];
+        //pre_hash_value_of_position += hash_values_of_squares_with_U[last_move.row][last_move.col];
     }
 
     initialize_hash_value_of_position(); // uses pre_hash_value_of_position above to get an int >= 1,000,000 to set hash_value_of_position to.
@@ -1872,52 +1870,21 @@ coordinate position::return_a_move_that_wins_immediately() const
 
 // PUBLIC STATIC METHODS:
 
-vector<vector<double>> position::find_hash_values_for_all_squares_in_board(char piece)
+vector<vector<int>> position::get_board_of_random_ints()
 {
-    vector<vector<double>> vec; // will be returned.
+    https://stackoverflow.com/questions/13445688/how-to-generate-a-random-number-in-c
+    // Using the method described in the top answer for generating random numbers, as opposed to something like rand().
 
-    vector<double> single_row;
+    random_device dev;
+    mt19937 rng(dev());
+    uniform_int_distribution<mt19937::result_type> dist(1, transposition_table.size() - 5);
 
-    for (int col = 0; col <= max_col_index; col++)
-    {
-        single_row.push_back(0.0);
-    }
-
-    for (int row = 0; row <= max_row_index; row++)
-    {
-        vec.push_back(single_row);
-    }
-
-    // Now run through vec, giving each element/square a double value:
-
-    for (int row = 0; row <= max_row_index; row++)
-    {
-        for (int col = 0; col <= max_col_index; col++)
-        {
-            double x = static_cast<double>(row+1) * static_cast<double>(col+1) + static_cast<double>(col+1) / 7.0;
-
-            // Now to use x as an input to a mathematical function to find the square's hash value. Which mathematical function
-            // is chosen depends on the piece square stores:
-
-            if (piece == 'C')
-            {
-                // cot(x+5) / 5:
-
-                vec[row][col] = cotangent_with_degrees(x + 5.0) / 5.0;
-            }
-
-            else if (piece == 'U')
-            {
-                vec[row][col] = log10(x + 1.0);
-            }
-
-            else // piece = ' ':
-            {
-                vec[row][col] = sqrt(x + 1.0) - 1.3;
-            }
+    vector<vector<int>> vec(6, vector<int>(7));
+    for (int r = 0; r < 6; ++r) {
+        for (int c = 0; c < 7; ++c) {
+            vec[r][c] = dist(rng);
         }
     }
-
     return vec;
 }
 
