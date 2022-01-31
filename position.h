@@ -40,7 +40,7 @@ struct treasure_spot
                                    // weak 2 square, set this attribute to true.
 };
 
-struct position_info_for_TT // The key info of a position that will be stored in the transposition table.
+struct position_info_for_TT_v2 // "v1" of this struct had the board as a 2D vector.
 {
     string board;
     int evaluation;
@@ -219,7 +219,7 @@ public:
 
     static const int max_hash_value;
 
-    static vector<vector<position_info_for_TT>> transposition_table; // A position's key & evaluation get stored here, at the appropriate
+    static vector<vector<position_info_for_TT_v2>> transposition_table; // A position's key & evaluation get stored here, at the appropriate
                                                                      // index (i.e., its hash value). The inner vector is to deal with possible
                                                                      // collisions. Multiple positions can be stored at the same
                                                                      // index in the outer vector via the inner vector.
@@ -257,7 +257,7 @@ public:
     // on whose turn it is in the calling object/position, which has to be determined by looking at first_pos or second_pos,
     // since this is a static function.
 
-    static position_info_for_TT find_duplicate_in_TT(const unique_ptr<position>& pt);
+    static position_info_for_TT_v2 find_duplicate_in_TT(const unique_ptr<position>& pt);
     // Searches through the TT for a duplicate of pt, and returns it.
 
     static coordinate find_legal_square(const string& boardP, int col);
@@ -402,7 +402,7 @@ const int position::max_hash_value = pow(2, 20) - 1; // If you want to increase 
 // numbers / TT size.
 // E.g., change the 20 above to 24, for a TT size of over 16 million.
 
-vector<vector<position_info_for_TT>> position::transposition_table(max_hash_value + 1);
+vector<vector<position_info_for_TT_v2>> position::transposition_table(max_hash_value + 1);
 vector<int> position::indices_of_elements_in_TT;
 
 vector<vector<int>> position::random_values_for_squares_with_C = get_board_of_random_ints();
@@ -1062,8 +1062,8 @@ void position::add_position_to_transposition_table(bool is_evaluation_indisputab
         return;
     }
 
-    position_info_for_TT temp;
-    temp.board = *board; // TODO - continue here for changing board usage from a 2D vector to a string.
+    position_info_for_TT_v2 temp;
+    temp.board = *board;
     temp.evaluation = evaluation;
     temp.calculation_depth_from_this_position = calculation_depth_from_this_position;
     temp.is_evaluation_indisputable = is_evaluation_indisputable;
@@ -1091,7 +1091,7 @@ void position::add_position_to_transposition_table(bool is_evaluation_indisputab
 
     bool does_a_duplicate_exist = false;
 
-    for (position_info_for_TT& current: transposition_table[hash_value_of_position]) // by reference is deliberate.
+    for (position_info_for_TT_v2& current: transposition_table[hash_value_of_position]) // by reference is deliberate.
     {
         if (current.board == temp.board && current.is_comp_turn == temp.is_comp_turn)
         {
@@ -1145,7 +1145,7 @@ bool position::did_opponent_win() const
 // Post-condition: The function will return true if the board is full... it is not guaranteed no one has four-in-a-row.
 bool position::is_game_drawn() const
 {
-    return number_of_pieces == 42; // since a 7x6 board will have 42 pieces when filled up completely.
+    return number_of_pieces == 42;
 }
 
 bool position::evaluation_in_future_positions(int eval) const
@@ -1195,7 +1195,7 @@ bool position::is_valid_move(string column) const
 
     // Now to check if the top spot of col in board is empty:
 
-    return ((*board)[0][col] == ' ');
+    return (*board)[index(0, col)] == ' ';
 }
 
 void position::remove_treasure_spot_objects_from_vector(shared_ptr<vector<treasure_spot>>& vec)
@@ -1205,7 +1205,8 @@ void position::remove_treasure_spot_objects_from_vector(shared_ptr<vector<treasu
 
     for (const treasure_spot& element: (*vec))
     {
-        if ((*board)[element.current_square.row][element.current_square.col] == ' ') // square is safe, since its location in board is empty (stores ' ').
+        if ((*board)[index(element.current_square.row, element.current_square.col)] == ' ')
+        // square is safe, since its location in board is empty (stores ' ').
         {
             updated_vec->push_back(move(element));
         }
@@ -1276,16 +1277,16 @@ void position::find_critical_moves_in_amplifying_vector(vector<coordinate>& crit
 {
     for (const treasure_spot& temp: *amplifying_vector)
     {
-        if ((*board)[temp.current_square.row][temp.current_square.col] == ' ') // so the square is still a valid amplifying square...
+        if ((*board)[index(temp.current_square.row, temp.current_square.col)] == ' ') // so the square is still a valid amplifying square...
         {
             // Now to see if the square can be filled in one move...
 
-            if (temp.current_square.row == max_row_index || (*board)[temp.current_square.row + 1][temp.current_square.col] != ' ')
+            if (temp.current_square.row == max_row_index || (*board)[index(temp.current_square.row + 1, temp.current_square.col)] != ' ')
             {
                 // Now to see if the square creates a 4-in-a-row, if filled...
 
-                if (are_3_pieces || (is_in_bounds(temp.next_square) && (*board)[temp.next_square.row][temp.next_square.col] == piece) ||
-                    (is_in_bounds(temp.other_next_square) && (*board)[temp.other_next_square.row][temp.other_next_square.col] == piece))
+                if (are_3_pieces || (is_in_bounds(temp.next_square) && (*board)[index(temp.next_square.row, temp.next_square.col)] == piece) ||
+                    (is_in_bounds(temp.other_next_square) && (*board)[index(temp.other_next_square.row, temp.other_next_square.col)] == piece))
                 {
                     // Since the square/move either amplifies a 3-in-a-row or connects a 2-in-a-row with a piece,
                     // add it to the critical_moves vector (since it creates a 4-in-a-row):
@@ -1411,7 +1412,7 @@ void position::find_winning_squares(vector<coordinate>& vec, const shared_ptr<ve
 {
     for (const treasure_spot& temp: *squares_amplifying_3)
     {
-        if ((*board)[temp.current_square.row][temp.current_square.col] == ' ')
+        if ((*board)[index(temp.current_square.row, temp.current_square.col)] == ' ')
         {
             vec.push_back(temp.current_square);
 
@@ -1424,9 +1425,9 @@ void position::find_winning_squares(vector<coordinate>& vec, const shared_ptr<ve
 
     for (const treasure_spot& temp: *squares_amplifying_2)
     {
-        if ((*board)[temp.current_square.row][temp.current_square.col] == ' ' &&
-            ((is_in_bounds(temp.next_square) && (*board)[temp.next_square.row][temp.next_square.col] == piece) ||
-             (is_in_bounds(temp.other_next_square) && (*board)[temp.other_next_square.row][temp.other_next_square.col] == piece)))
+        if ((*board)[index(temp.current_square.row, temp.current_square.col)] == ' ' &&
+            ((is_in_bounds(temp.next_square) && (*board)[index(temp.next_square.row, temp.next_square.col)] == piece) ||
+             (is_in_bounds(temp.other_next_square) && (*board)[index(temp.other_next_square.row, temp.other_next_square.col)] == piece)))
         {
             vec.push_back(temp.current_square);
 
@@ -1455,7 +1456,7 @@ bool position::can_create_threat_with_D(char piece, int highest_row) const
 
     for (int row = highest_row; row < 6; row++)
     {
-        if ((*board)[row][3] == opponent_piece)
+        if ((*board)[index(row, 3)] == opponent_piece)
         {
             continue;
         }
@@ -1476,73 +1477,73 @@ bool position::can_square_be_involved_in_horizontal_win(char piece, char opponen
 {
     // Don't need to bounds check since only traversing horizontally, and the square is in D.
 
-    if ((*board)[row][col-1] == opponent_piece)
+    if ((*board)[index(row, col-1)] == opponent_piece)
     {
-        return ((*board)[row][col+1] != opponent_piece && (*board)[row][col+2] != opponent_piece && (*board)[row][col+3] != opponent_piece);
+        return ((*board)[index(row, col+1)] != opponent_piece && (*board)[index(row, col+2)] != opponent_piece && (*board)[index(row, col+3)] != opponent_piece);
     }
 
     // [row][col-1] doesn't store opponent's piece, so it's a valid square.
 
-    else if ((*board)[row][col+1] == opponent_piece)
+    else if ((*board)[index(row, col+1)] == opponent_piece)
     {
-        return ((*board)[row][col-2] != opponent_piece && (*board)[row][col-3] != opponent_piece);
+        return ((*board)[index(row, col-2)] != opponent_piece && (*board)[index(row, col-3)] != opponent_piece);
     }
 
     // [row][col+1] is also a valid square.
 
     else
     {
-        return ((*board)[row][col+2] != opponent_piece || (*board)[row][col-2] != opponent_piece);
+        return ((*board)[index(row, col+2)] != opponent_piece || (*board)[index(row, col-2)] != opponent_piece);
     }
 }
 
 // Pre-condition: square is somewhere in column D.
 bool position::can_square_be_involved_in_upper_diagonal_win(char piece, char opponent_piece, int row, int col) const
 {
-    if (row + 1 > max_row_index || (*board)[row+1][col-1] == opponent_piece)
+    if (row + 1 > max_row_index || (*board)[index(row+1, col-1)] == opponent_piece)
     {
-        return (row - 3 >= 0 && (*board)[row-1][col+1] != opponent_piece &&
-                (*board)[row-2][col+2] != opponent_piece && (*board)[row-3][col+3] != opponent_piece);
+        return (row - 3 >= 0 && (*board)[index(row-1, col+1)] != opponent_piece &&
+                (*board)[index(row-2, col+2)] != opponent_piece && (*board)[index(row-3, col+3)] != opponent_piece);
     }
 
     // [row+1][col-1] doesn't store opponent's piece, so it's a valid square.
 
-    else if (row - 1 < 0 || (*board)[row-1][col+1] == opponent_piece)
+    else if (row - 1 < 0 || (*board)[index(row-1, col+1)] == opponent_piece)
     {
-        return (row + 3 <= max_row_index && (*board)[row+2][col-2] != opponent_piece && (*board)[row+3][col-3] != opponent_piece);
+        return (row + 3 <= max_row_index && (*board)[index(row+2, col-2)] != opponent_piece && (*board)[index(row+3, col-3)] != opponent_piece);
     }
 
     // [row-1][col+1] is also a valid square.
 
     else
     {
-        return ((row + 2 <= max_row_index && (*board)[row+2][col-2] != opponent_piece) ||
-                (row - 2 >= 0 && (*board)[row-2][col+2] != opponent_piece));
+        return ((row + 2 <= max_row_index && (*board)[index(row+2, col-2)] != opponent_piece) ||
+                (row - 2 >= 0 && (*board)[index(row-2, col+2)] != opponent_piece));
     }
 }
 
 // Pre-condition: square is somewhere in column D.
 bool position::can_square_be_involved_in_lower_diagonal_win(char piece, char opponent_piece, int row, int col) const
 {
-    if (row - 1 < 0 || (*board)[row-1][col-1] == opponent_piece)
+    if (row - 1 < 0 || (*board)[index(row-1, col-1)] == opponent_piece)
     {
-        return (row + 3 <= max_row_index && (*board)[row+1][col+1] != opponent_piece &&
-                (*board)[row+2][col+2] != opponent_piece && (*board)[row+3][col+3] != opponent_piece);
+        return (row + 3 <= max_row_index && (*board)[index(row+1, col+1)] != opponent_piece &&
+                (*board)[index(row+2, col+2)] != opponent_piece && (*board)[index(row+3, col+3)] != opponent_piece);
     }
 
     // [row-1][col-1] doesn't store opponent's piece, so it's a valid square.
 
-    else if (row + 1 > max_row_index || (*board)[row+1][col+1] == opponent_piece)
+    else if (row + 1 > max_row_index || (*board)[index(row+1, col+1)] == opponent_piece)
     {
-        return (row - 3 >= 0 && (*board)[row-2][col-2] != opponent_piece && (*board)[row-3][col-3] != opponent_piece);
+        return (row - 3 >= 0 && (*board)[index(row-2, col-2)] != opponent_piece && (*board)[index(row-3, col-3)] != opponent_piece);
     }
 
     // [row+1][col+1] is also a valid square.
 
     else
     {
-        return ((row + 2 <= max_row_index && (*board)[row+2][col+2] != opponent_piece) ||
-                (row - 2 >= 0 && (*board)[row-2][col-2] != opponent_piece));
+        return ((row + 2 <= max_row_index && (*board)[index(row+2, col+2)] != opponent_piece) ||
+                (row - 2 >= 0 && (*board)[index(row-2, col-2)] != opponent_piece));
     }
 }
 
@@ -1647,7 +1648,7 @@ coordinate_and_value position::find_quick_winning_move(int max_number_moves_acce
 
         bool is_player_winning = true;
 
-        for (const position_info_for_TT& current: transposition_table[p1->hash_value_of_position])
+        for (const position_info_for_TT_v2& current: transposition_table[p1->hash_value_of_position])
         {
             if (current.board == *(p1->board) && current.is_comp_turn == p1->is_comp_turn &&
                 ((is_comp_turn && current.evaluation != INT_MAX) || (!is_comp_turn && current.evaluation != INT_MIN)))
@@ -1810,9 +1811,9 @@ bool position::compare_future_positions_by_evaluation(const unique_ptr<position>
     }
 }
 
-position_info_for_TT position::find_duplicate_in_TT(const unique_ptr<position>& pt)
+position_info_for_TT_v2 position::find_duplicate_in_TT(const unique_ptr<position>& pt)
 {
-    for (const position_info_for_TT& current: transposition_table[pt->hash_value_of_position])
+    for (const position_info_for_TT_v2& current: transposition_table[pt->hash_value_of_position])
     {
         if (current.board == *(pt->board) && current.is_comp_turn == pt->is_comp_turn)
         {
@@ -1835,7 +1836,7 @@ position_info_for_TT position::find_duplicate_in_TT(const unique_ptr<position>& 
 
     // To do this, I'll create a dummy object with just this attribute set.
 
-    position_info_for_TT temp;
+    position_info_for_TT_v2 temp;
 
     temp.is_evaluation_indisputable = false;
 
@@ -2211,7 +2212,7 @@ void position::analyze_last_move()
         // 1) The evaluation is indisputable (i.e., forced).
         // 2) The duplicate position in the hash table has a >= "calculation_depth_from_this_position" than the calling object.
 
-    for (const position_info_for_TT& current: transposition_table[hash_value_of_position])
+    for (const position_info_for_TT_v2& current: transposition_table[hash_value_of_position])
     {
         if (current.board == *board && current.is_comp_turn == is_comp_turn &&
             (current.is_evaluation_indisputable || current.calculation_depth_from_this_position >= calculation_depth_from_this_position))
@@ -2307,7 +2308,7 @@ void position::analyze_last_move()
 
     bool found_earlier_duplicate_in_TT = false;
 
-    for (const position_info_for_TT& current: transposition_table[hash_value_of_position])
+    for (const position_info_for_TT_v2& current: transposition_table[hash_value_of_position])
     {
         if (current.board == *board && current.is_comp_turn == is_comp_turn && !current.possible_moves_sorted.empty())
         {
@@ -2336,7 +2337,7 @@ void position::analyze_horizontal_perspective_of_last_move()
 
     if (num_pieces_in_a_row == 1) // "1-in-a-row"... Version 20 values it!
     {
-        char piece = (*board)[last_move.row][last_move.col];
+        char piece = (*board)[index(last_move.row, last_move.col)];
 
         // By definition, there are empty squares on either side of last_move, or out-of-bounds.
             // I don't need to check if such a square is empty, due to num_pieces_in_a_row = 1.
@@ -2344,7 +2345,7 @@ void position::analyze_horizontal_perspective_of_last_move()
 
         // See if the square to the left amplifies a "2-in-a-row":
 
-        if (last_move.col - 2 >= 0 && (*board)[last_move.row][last_move.col - 2] == piece)
+        if (last_move.col - 2 >= 0 && (*board)[index(last_move.row, last_move.col-2)] == piece)
         {
             treasure_spot temp;
 
@@ -2360,7 +2361,7 @@ void position::analyze_horizontal_perspective_of_last_move()
             add_to_appropriate_amplifying_vector(2, temp);
         }
 
-        else if (last_move.col - 3 >= 0 && (*board)[last_move.row][last_move.col - 3] == piece)
+        else if (last_move.col - 3 >= 0 && (*board)[index(last_move.row, last_move.col-3)] == piece)
         {
             // So we have a situation like this:
 
@@ -2386,7 +2387,7 @@ void position::analyze_horizontal_perspective_of_last_move()
             add_to_appropriate_amplifying_vector(2, temp);
         }
 
-        if (last_move.col + 2 <= max_col_index && (*board)[last_move.row][last_move.col + 2] == piece)
+        if (last_move.col + 2 <= max_col_index && (*board)[index(last_move.row, last_move.col + 2)] == piece)
         {
             treasure_spot temp;
 
@@ -2402,7 +2403,7 @@ void position::analyze_horizontal_perspective_of_last_move()
             add_to_appropriate_amplifying_vector(2, temp);
         }
 
-        else if (last_move.col + 3 <= max_col_index && (*board)[last_move.row][last_move.col + 3] == piece)
+        else if (last_move.col + 3 <= max_col_index && (*board)[index(last_move.row, last_move.col + 3)] == piece)
         {
             treasure_spot temp;
 
@@ -2460,13 +2461,13 @@ void position::analyze_horizontal_perspective_of_last_move()
     succeeding_point.other_next_square = preceding_point.current_square;
 
     if (preceding_point.current_square.col >= 0 &&
-        (*board)[preceding_point.current_square.row][preceding_point.current_square.col] == ' ')
+        (*board)[index(preceding_point.current_square.row, preceding_point.current_square.col)] == ' ')
     {
         add_to_appropriate_amplifying_vector(num_pieces_in_a_row, preceding_point);
     }
 
     if (succeeding_point.current_square.col <= max_col_index &&
-        (*board)[succeeding_point.current_square.row][succeeding_point.current_square.col] == ' ')
+        (*board)[index(succeeding_point.current_square.row, succeeding_point.current_square.col)] == ' ')
     {
         add_to_appropriate_amplifying_vector(num_pieces_in_a_row, succeeding_point);
     }
@@ -2530,7 +2531,7 @@ void position::analyze_positive_slope_diagonal_perspective_of_last_move()
 
     if (num_pieces_in_a_row == 1) // "1-in-a-row"... Version 20 values it!
     {
-        char piece = (*board)[last_move.row][last_move.col];
+        char piece = (*board)[index(last_move.row, last_move.col)];
 
         // By definition, there are empty squares on either side of last_move, or out-of-bounds.
             // I don't need to check if such a square is empty, due to num_pieces_in_a_row = 1.
@@ -2538,7 +2539,7 @@ void position::analyze_positive_slope_diagonal_perspective_of_last_move()
 
         // See if the square to the down-left amplifies a "2-in-a-row":
 
-        if (last_move.col - 2 >= 0 && last_move.row + 2 <= max_row_index && (*board)[last_move.row + 2][last_move.col - 2] == piece)
+        if (last_move.col - 2 >= 0 && last_move.row + 2 <= max_row_index && (*board)[index(last_move.row + 2, last_move.col - 2)] == piece)
         {
             treasure_spot temp;
 
@@ -2558,7 +2559,7 @@ void position::analyze_positive_slope_diagonal_perspective_of_last_move()
         }
 
         else if (last_move.col - 3 >= 0 && last_move.row + 3 <= max_row_index &&
-                 (*board)[last_move.row + 3][last_move.col - 3] == piece)
+                 (*board)[index(last_move.row + 3, last_move.col - 3)] == piece)
         {
             treasure_spot temp;
 
@@ -2580,7 +2581,7 @@ void position::analyze_positive_slope_diagonal_perspective_of_last_move()
 
         // See if the square to the up-right amplifies a "2-in-a-row":
 
-        if (last_move.col + 2 <= max_col_index && last_move.row - 2 >= 0 && (*board)[last_move.row - 2][last_move.col + 2] == piece)
+        if (last_move.col + 2 <= max_col_index && last_move.row - 2 >= 0 && (*board)[index(last_move.row-2, last_move.col+2)] == piece)
         {
             treasure_spot temp;
 
@@ -2600,7 +2601,7 @@ void position::analyze_positive_slope_diagonal_perspective_of_last_move()
         }
 
         else if (last_move.col + 3 <= max_col_index && last_move.row - 3 >= 0 &&
-                 (*board)[last_move.row - 3][last_move.col + 3] == piece)
+                 (*board)[index(last_move.row-3, last_move.col+3)] == piece)
         {
             treasure_spot temp;
 
@@ -2665,14 +2666,14 @@ void position::analyze_positive_slope_diagonal_perspective_of_last_move()
 
     if (preceding_point.current_square.col >= 0 &&
         preceding_point.current_square.row <= max_row_index &&
-        (*board)[preceding_point.current_square.row][preceding_point.current_square.col] == ' ')
+        (*board)[index(preceding_point.current_square.row, preceding_point.current_square.col)] == ' ')
     {
         add_to_appropriate_amplifying_vector(num_pieces_in_a_row, preceding_point);
     }
 
     if (succeeding_point.current_square.col <= max_col_index &&
         succeeding_point.current_square.row >= 0 &&
-        (*board)[succeeding_point.current_square.row][succeeding_point.current_square.col] == ' ')
+        (*board)[index(succeeding_point.current_square.row, succeeding_point.current_square.col)] == ' ')
     {
         add_to_appropriate_amplifying_vector(num_pieces_in_a_row, succeeding_point);
     }
@@ -2686,7 +2687,7 @@ void position::analyze_negative_slope_diagonal_perspective_of_last_move()
 
     if (num_pieces_in_a_row == 1) // "1-in-a-row"... Version 20 values it!
     {
-        char piece = (*board)[last_move.row][last_move.col];
+        char piece = (*board)[index(last_move.row, last_move.col)];
 
         // By definition, there are empty squares on either side of last_move, or out-of-bounds.
             // I don't need to check if such a square is empty, due to num_pieces_in_a_row = 1.
@@ -2694,7 +2695,7 @@ void position::analyze_negative_slope_diagonal_perspective_of_last_move()
 
         // See if the square to the up-left amplifies a "2-in-a-row":
 
-        if (last_move.col - 2 >= 0 && last_move.row - 2 >= 0 && (*board)[last_move.row - 2][last_move.col - 2] == piece)
+        if (last_move.col - 2 >= 0 && last_move.row - 2 >= 0 && (*board)[index(last_move.row-2, last_move.col-2)] == piece)
         {
             treasure_spot temp;
 
@@ -2714,7 +2715,7 @@ void position::analyze_negative_slope_diagonal_perspective_of_last_move()
         }
 
         else if (last_move.col - 3 >= 0 && last_move.row - 3 >= 0 &&
-                 (*board)[last_move.row - 3][last_move.col - 3] == piece)
+                 (*board)[index(last_move.row-3, last_move.col-3)] == piece)
         {
             treasure_spot temp;
 
@@ -2736,7 +2737,7 @@ void position::analyze_negative_slope_diagonal_perspective_of_last_move()
 
         // See if the square to the down-right amplifies a "2-in-a-row":
 
-        if (last_move.col + 2 <= max_col_index && last_move.row + 2 <= max_row_index && (*board)[last_move.row + 2][last_move.col + 2] == piece)
+        if (last_move.col + 2 <= max_col_index && last_move.row + 2 <= max_row_index && (*board)[index(last_move.row+2, last_move.col+2)] == piece)
         {
             treasure_spot temp;
 
@@ -2756,7 +2757,7 @@ void position::analyze_negative_slope_diagonal_perspective_of_last_move()
         }
 
         else if (last_move.col + 3 <= max_col_index && last_move.row + 3 <= max_row_index &&
-                 (*board)[last_move.row + 3][last_move.col + 3] == piece)
+                 (*board)[index(last_move.row+3, last_move.col+3)] == piece)
         {
             treasure_spot temp;
 
@@ -2821,14 +2822,14 @@ void position::analyze_negative_slope_diagonal_perspective_of_last_move()
 
     if (preceding_point.current_square.col >= 0 &&
         preceding_point.current_square.row >= 0 &&
-        (*board)[preceding_point.current_square.row][preceding_point.current_square.col] == ' ')
+        (*board)[index(preceding_point.current_square.row, preceding_point.current_square.col)] == ' ')
     {
         add_to_appropriate_amplifying_vector(num_pieces_in_a_row, preceding_point);
     }
 
     if (succeeding_point.current_square.col <= max_col_index &&
         succeeding_point.current_square.row <= max_row_index &&
-        (*board)[succeeding_point.current_square.row][succeeding_point.current_square.col] == ' ')
+        (*board)[index(succeeding_point.current_square.row, succeeding_point.current_square.col)] == ' ')
     {
         add_to_appropriate_amplifying_vector(num_pieces_in_a_row, succeeding_point);
     }
@@ -3356,23 +3357,23 @@ bool position::did_someone_win() const
 
 bool position::horizontal_four_combo() const
 {
-    if (last_move.col + 1 > max_col_index || (*board)[last_move.row][last_move.col + 1] != (*board)[last_move.row][last_move.col])
+    if (last_move.col + 1 > max_col_index || (*board)[last_move.row][last_move.col + 1] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.col - 3 >= 0 &&
-                (*board)[last_move.row][last_move.col - 3] == (*board)[last_move.row][last_move.col] &&
-                (*board)[last_move.row][last_move.col - 2] == (*board)[last_move.row][last_move.col] &&
-                (*board)[last_move.row][last_move.col - 1] == (*board)[last_move.row][last_move.col]);
+                (*board)[index(last_move.row, last_move.col-3)] == (*board)[index(last_move.row, last_move.col)] &&
+                (*board)[index(last_move.row, last_move.col-2)] == (*board)[index(last_move.row, last_move.col)] &&
+                (*board)[last_move.row][last_move.col - 1] == (*board)[index(last_move.row, last_move.col)]);
     }
 
-    if (last_move.col - 1 < 0 || (*board)[last_move.row][last_move.col - 1] != (*board)[last_move.row][last_move.col])
+    if (last_move.col - 1 < 0 || (*board)[last_move.row][last_move.col - 1] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.col + 3 <= max_col_index &&
-                (*board)[last_move.row][last_move.col + 3] == (*board)[last_move.row][last_move.col] &&
-                (*board)[last_move.row][last_move.col + 2] == (*board)[last_move.row][last_move.col]);
+                (*board)[index(last_move.row, last_move.col + 3)] == (*board)[index(last_move.row, last_move.col)] &&
+                (*board)[index(last_move.row, last_move.col + 2)] == (*board)[index(last_move.row, last_move.col)]);
     }
 
-    return ((last_move.col - 2 >= 0 && (*board)[last_move.row][last_move.col - 2] == (*board)[last_move.row][last_move.col]) ||
-            (last_move.col + 2 <= max_col_index && (*board)[last_move.row][last_move.col + 2] == (*board)[last_move.row][last_move.col]));
+    return ((last_move.col - 2 >= 0 && (*board)[index(last_move.row, last_move.col-2)] == (*board)[index(last_move.row, last_move.col)]) ||
+            (last_move.col + 2 <= max_col_index && (*board)[index(last_move.row, last_move.col + 2)] == (*board)[index(last_move.row, last_move.col)]));
 }
 
 bool position::vertical_four_combo() const
@@ -3382,73 +3383,73 @@ bool position::vertical_four_combo() const
     // Therefore, I only need to check if there are 3 pieces under the last move, and if these pieces match the last move.
 
     return (last_move.row + 3 <= max_row_index &&
-            (*board)[last_move.row + 3][last_move.col] == (*board)[last_move.row][last_move.col] &&
-            (*board)[last_move.row + 2][last_move.col] == (*board)[last_move.row][last_move.col] &&
-            (*board)[last_move.row + 1][last_move.col] == (*board)[last_move.row][last_move.col]);
+            (*board)[last_move.row + 3][last_move.col] == (*board)[index(last_move.row, last_move.col)] &&
+            (*board)[last_move.row + 2][last_move.col] == (*board)[index(last_move.row, last_move.col)] &&
+            (*board)[last_move.row + 1][last_move.col] == (*board)[index(last_move.row, last_move.col)]);
 }
 
 bool position::positive_slope_diagonal_four_combo() const
 {
     if (last_move.row - 1 < 0 ||
         last_move.col + 1 > max_col_index ||
-        (*board)[last_move.row - 1][last_move.col + 1] != (*board)[last_move.row][last_move.col])
+        (*board)[last_move.row - 1][last_move.col + 1] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.row + 3 <= max_row_index &&
                 last_move.col - 3 >= 0 &&
-                (*board)[last_move.row + 3][last_move.col - 3] == (*board)[last_move.row][last_move.col] &&
-                (*board)[last_move.row + 2][last_move.col - 2] == (*board)[last_move.row][last_move.col] &&
-                (*board)[last_move.row + 1][last_move.col - 1] == (*board)[last_move.row][last_move.col]);
+                (*board)[index(last_move.row + 3, last_move.col - 3)] == (*board)[index(last_move.row, last_move.col)] &&
+                (*board)[index(last_move.row + 2, last_move.col - 2)] == (*board)[index(last_move.row, last_move.col)] &&
+                (*board)[last_move.row + 1][last_move.col - 1] == (*board)[index(last_move.row, last_move.col)]);
     }
 
     if (last_move.row + 1 > max_row_index ||
         last_move.col - 1 < 0 ||
-        (*board)[last_move.row + 1][last_move.col - 1] != (*board)[last_move.row][last_move.col])
+        (*board)[last_move.row + 1][last_move.col - 1] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.row - 3 >= 0 &&
                 last_move.col + 3 <= max_col_index &&
-                (*board)[last_move.row - 3][last_move.col + 3] == (*board)[last_move.row][last_move.col] &&
-                (*board)[last_move.row - 2][last_move.col + 2] == (*board)[last_move.row][last_move.col]);
+                (*board)[index(last_move.row-3, last_move.col+3)] == (*board)[index(last_move.row, last_move.col)] &&
+                (*board)[index(last_move.row-2, last_move.col+2)] == (*board)[index(last_move.row, last_move.col)]);
     }
 
     return ((last_move.row + 2 <= max_row_index &&
              last_move.col - 2 >= 0 &&
-             (*board)[last_move.row + 2][last_move.col - 2] == (*board)[last_move.row][last_move.col])
+             (*board)[index(last_move.row + 2, last_move.col - 2)] == (*board)[index(last_move.row, last_move.col)])
             ||
             (last_move.row - 2 >= 0 &&
              last_move.col + 2 <= max_col_index &&
-             (*board)[last_move.row - 2][last_move.col + 2] == (*board)[last_move.row][last_move.col]));
+             (*board)[index(last_move.row-2, last_move.col+2)] == (*board)[index(last_move.row, last_move.col)]));
 }
 
 bool position::negative_slope_diagonal_four_combo() const
 {
     if (last_move.row + 1 > max_row_index ||
         last_move.col + 1 > max_col_index ||
-        (*board)[last_move.row + 1][last_move.col + 1] != (*board)[last_move.row][last_move.col])
+        (*board)[last_move.row + 1][last_move.col + 1] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.row - 3 >= 0 &&
                 last_move.col - 3 >= 0 &&
-                (*board)[last_move.row - 3][last_move.col - 3] == (*board)[last_move.row][last_move.col] &&
-                (*board)[last_move.row - 2][last_move.col - 2] == (*board)[last_move.row][last_move.col] &&
-                (*board)[last_move.row - 1][last_move.col - 1] == (*board)[last_move.row][last_move.col]);
+                (*board)[index(last_move.row-3, last_move.col-3)] == (*board)[index(last_move.row, last_move.col)] &&
+                (*board)[index(last_move.row-2, last_move.col-2)] == (*board)[index(last_move.row, last_move.col)] &&
+                (*board)[last_move.row - 1][last_move.col - 1] == (*board)[index(last_move.row, last_move.col)]);
     }
 
     if (last_move.row - 1 < 0 ||
         last_move.col - 1 < 0 ||
-        (*board)[last_move.row - 1][last_move.col - 1] != (*board)[last_move.row][last_move.col])
+        (*board)[last_move.row - 1][last_move.col - 1] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.row + 3 <= max_row_index &&
                 last_move.col + 3 <= max_col_index &&
-                (*board)[last_move.row + 3][last_move.col + 3] == (*board)[last_move.row][last_move.col] &&
-                (*board)[last_move.row + 2][last_move.col + 2] == (*board)[last_move.row][last_move.col]);
+                (*board)[index(last_move.row+3, last_move.col+3)] == (*board)[index(last_move.row, last_move.col)] &&
+                (*board)[index(last_move.row+2, last_move.col+2)] == (*board)[index(last_move.row, last_move.col)]);
     }
 
     return ((last_move.row - 2 >= 0 &&
              last_move.col - 2 >= 0 &&
-             (*board)[last_move.row - 2][last_move.col - 2] == (*board)[last_move.row][last_move.col])
+             (*board)[index(last_move.row-2, last_move.col-2)] == (*board)[index(last_move.row, last_move.col)])
             ||
             (last_move.row + 2 <= max_row_index &&
              last_move.col + 2 <= max_col_index &&
-             (*board)[last_move.row + 2][last_move.col + 2] == (*board)[last_move.row][last_move.col]));
+             (*board)[index(last_move.row+2, last_move.col+2)] == (*board)[index(last_move.row, last_move.col)]));
 }
 
 bool position::is_acceptable_letter(char c) const
@@ -3471,7 +3472,7 @@ bool position::is_element_in_vector(const vector<vector<vector<char>>>& vec, con
 
 coordinate position::find_starting_horizontal_point() const
 {
-    char piece = (*board)[last_move.row][last_move.col];
+    char piece = (*board)[index(last_move.row, last_move.col)];
 
     coordinate left_most_point = last_move;
 
@@ -3488,7 +3489,7 @@ coordinate position::find_starting_horizontal_point() const
 
 coordinate position::find_ending_horizontal_point() const
 {
-    char piece = (*board)[last_move.row][last_move.col];
+    char piece = (*board)[index(last_move.row, last_move.col)];
 
     coordinate right_most_point = last_move;
 
@@ -3505,7 +3506,7 @@ coordinate position::find_ending_horizontal_point() const
 
 coordinate position::find_ending_vertical_point() const
 {
-    char piece = (*board)[last_move.row][last_move.col];
+    char piece = (*board)[index(last_move.row, last_move.col)];
 
     coordinate bottom_most_point = last_move;
 
@@ -3522,7 +3523,7 @@ coordinate position::find_ending_vertical_point() const
 
 coordinate position::find_starting_positive_slope_diagonal_point() const
 {
-    char piece = (*board)[last_move.row][last_move.col];
+    char piece = (*board)[index(last_move.row, last_move.col)];
 
     coordinate bottom_left_most_point = last_move;
 
@@ -3542,7 +3543,7 @@ coordinate position::find_starting_positive_slope_diagonal_point() const
 
 coordinate position::find_ending_positive_slope_diagonal_point() const
 {
-    char piece = (*board)[last_move.row][last_move.col];
+    char piece = (*board)[index(last_move.row, last_move.col)];
 
     coordinate top_right_most_point = last_move;
 
@@ -3562,7 +3563,7 @@ coordinate position::find_ending_positive_slope_diagonal_point() const
 
 coordinate position::find_starting_negative_slope_diagonal_point() const
 {
-    char piece = (*board)[last_move.row][last_move.col];
+    char piece = (*board)[index(last_move.row, last_move.col)];
 
     coordinate top_left_most_point = last_move;
 
@@ -3582,7 +3583,7 @@ coordinate position::find_starting_negative_slope_diagonal_point() const
 
 coordinate position::find_ending_negative_slope_diagonal_point() const
 {
-    char piece = (*board)[last_move.row][last_move.col];
+    char piece = (*board)[index(last_move.row, last_move.col)];
 
     coordinate bottom_right_most_point = last_move;
 
@@ -3610,7 +3611,7 @@ void position::display_board()
 
         for (int col = 0; col <= 6; col++)
         {
-            cout << (*board)[row][col] << " | ";
+            cout << (*board)[index(row, col)] << " | ";
         }
 
         cout << "\n" << "  |---|---|---|---|---|---|---|\n";

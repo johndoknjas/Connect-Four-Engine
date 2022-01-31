@@ -46,6 +46,8 @@
               - https://stackoverflow.com/questions/47981/how-do-you-set-clear-and-toggle-a-single-bit
               - https://www.geeksforgeeks.org/set-clear-and-toggle-a-given-bit-of-a-number-in-c/
               - Probably prefer the first answer from the SO link, since it seems to account for unsigned long long stuff.
+        - You could also consider representing the actual board with two long long ints (so not just the one stored in the TT).
+          Not sure if this would be more efficient or not though.
   - Could get rid of the indices_of_elements_in_TT vector, and just reset the vector after each game. If this is fast, then
     it would maybe be a bit efficient to do this (since now indices_of_elements doesn't need to have push_back called on it
     everytime a new bucket is used in the TT).
@@ -53,6 +55,10 @@
   - Note that making the TT bigger will reduce collisions (both for zobrist hashing and the old hashing method you were doing before), but using a TT
     at like size 10 million may actually slow down the engine. So for now, a size of around 1 million seems like a relatively good sweet spot.
 
+  - Instead of using vector<bool>, use two unsigned long longs, and apply bitwise operations to them. Each bit represents whether
+    a square would win for one of the players. Also, for unsigned long longs (64 bits), passing by value should (probably) be at least
+    as efficient as passing by reference (which would likely be implementing using a pointer that is 64 bits). 
+    Passing by reference has some indirection involved in accessing the value.
 
 
 - Get rid of 2D vectors, as accessing elements in them is relatively inefficient. Replace with 1D vectors or
