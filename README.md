@@ -10,22 +10,15 @@ https://drive.google.com/file/d/1f0q-X5edDGx_Rh-TuJIHSRoRlc2R1WED/view?usp=shari
 
 After downloading, copy this DB file to some directory on your computer.
 
-Also, please install sqlite3, if it's not on your computer. The program uses the splite3 C++ API to interface with the database.
+Also, please install sqlite3, if it's not on your computer. The program uses the splite3 C/C++ API to interface with the database.
 
 After doing this, you can run a.exe directly, if you just want to play against the engine in the raw C++ ASCI interface.
 
-If you'd prefer to play using a Python GUI I built, go inside the Version 50/bin/Debug directory, 
-and then there are two options for setting up the pygame application.
+If you'd prefer to play using a Python GUI I built, go inside the python-gui directory and open the command prompt. If you don't have pyinstaller, 
+install it with "pip install pyinstaller". Then type "pyinstaller interface.py" - we're only interested in the dist/interface directory that gets created.
+Copy the following files from /python-gui, and paste them into /python-gui/dist/interface: directory.txt, error_effect.wav, move_effect.wav, OngoingScore.txt, 
+second_move_effect.wav, and signal.txt. Also, go back into the /Connect Four directory, and copy the a.exe file into /python-gui/dist/interface as well.
 
-  1) Open the command prompt and go to /bin/Debug. If you don't have pyinstaller, install it with "pip install pyinstaller".
-     Then type "pyinstaller interface.py" - we're only interested in the dist/interface directory that gets created.
-     In /bin/Debug, copy the following files (and paste them into /dist/interface): 
-     directory.txt, error_effect.wav, move_effect.wav, OngoingScore.txt, second_move_effect.wav, signal.txt, and
-     Version 1 - April 25, 2018.exe.
-     
-  2) Or, you can download the dist folder here: https://drive.google.com/drive/folders/1o3rtGn-gOKd7RU8V7KG-VeTIGdczPheB?usp=sharing
-  
- After doing either of these options, go into /dist/interface, and open up the directory.txt file. Replace the line in it with the absolute
- directory of where you downloaded the database on to your computer.
+Then in /python-gui/dist/interface, open up the directory.txt file. Replace the line in it with the absolute path of where you downloaded the database onto your computer.
  
- Finally, run interface.exe.
+Finally, run interface.exe.

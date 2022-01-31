@@ -8,15 +8,11 @@
       The col values of 3 aren't used anywhere.
     - In the first for loop of add_position_to_transposition_table, break at the end of the first if statement block.
       Whether or not the second if statement is true should be irrelevant to the decision to break.
-- Currently working on:
     - Making the board a string instead of a 2D vector.
-    - *Update* - see the experiment results of the 2D vector vs string experiment. It seems that with O2 optimization
-      turned on, there isn't any significant benefit to using a string. Maybe it's different with connect four though,
-      since all the operations on the collections aren't being done immediately one after the other in a loop - it could
-      have been the case that the 2D vector matched the string in the experiemnt due to some caching optimizations?
-- Expectation:
-    - In the Versus Sim against Version 50, the match should be completely drawn when search
-      is depth limited, but Version 51 should be faster.
+- Results:
+    - In the depth 9 Versus Sim match against V.51, every trial was drawn. V.52 spent on average 0.0246262 seconds thinking
+      per move, while V.51 spent 0.031674 seconds. So, V.52 is faster by a factor of around 1.286. This is a better improvement
+      than what I had expected!
 
 
 
