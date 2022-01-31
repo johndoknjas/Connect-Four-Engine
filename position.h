@@ -262,7 +262,7 @@ public:
 
     static coordinate find_legal_square(const string& boardP, int col);
 
-    static unique_ptr<position> think_on_game_position(const vector<vector<char>>& boardP, bool is_comp_turnP, coordinate last_moveP,
+    static unique_ptr<position> think_on_game_position(const vector<vector<char>>& boardP_as_vec, bool is_comp_turnP, coordinate last_moveP,
                                     const vector<treasure_spot>& squares_amplifying_comp_2P, const vector<treasure_spot>& squares_amplifying_comp_3P,
                                     const vector<treasure_spot>& squares_amplifying_user_2P, const vector<treasure_spot>& squares_amplifying_user_3P,
                                     bool starting_new_game, coordinate& best_move, bool generate_best_move);
@@ -288,6 +288,8 @@ public:
     // Also, it doesn't matter whether an inline function is static or not, provided
     // its a member of a class (like index is). See the quote from 12.2.1 in:
     // https://stackoverflow.com/questions/44788412/c-inline-functions-declare-as-such-define-as-such-or-both-why
+
+    static string convert_2D_vec_board_to_string(const vector<vector<char>>& boardP);
 
 private:
     // Private variables:
@@ -375,9 +377,7 @@ private:
     bool positive_slope_diagonal_four_combo() const; // returns true if there is a positive slope diagonal 4-in-a-row in board.
     bool negative_slope_diagonal_four_combo() const; // returns true if there is a negative slope diagonal 4-in-a-row in board.
     bool is_acceptable_letter(char c) const; // returns true if char c is a letter from a-g (uppercase OR lowercase).
-    bool is_element_in_vector(const vector<string>& vec, const string& element) const;
-    // returns true if element is in vector vec. *Note*: vec is just a vector storing boards,
-    // and element is a board (not necessarily the private board attribute of the calling object though!).
+
     coordinate find_starting_horizontal_point() const; // finds left-most connected square from last_move.
     coordinate find_ending_horizontal_point() const; // finds right_most connected square from last_move.
     coordinate find_ending_vertical_point() const; // finds the bottom-most connected square from last_move.
@@ -1049,7 +1049,7 @@ void position::rearrange_possible_moves(const vector<coordinate>& front_moves)
 
     possible_moves = replacement;
 
-    if (possible_move.size() != start_size)
+    if (possible_moves.size() != start_size)
     {
         throw runtime_error("possible_moves.size changes.\n");
     }
@@ -1559,7 +1559,7 @@ void position::set_static_thinking_time(double val)
     position::thinking_time = val;
 }
 
-unique_ptr<tool> position::call_static_think_on_game_position(const vector <vector<char>>& boardP, bool is_comp_turnP,
+unique_ptr<tool> position::call_static_think_on_game_position(const vector<vector<char>>& boardP, bool is_comp_turnP,
                                                               coordinate last_moveP, const vector<treasure_spot>& squares_amplifying_comp_2P,
                                                               const vector<treasure_spot>& squares_amplifying_comp_3P,
                                                               const vector<treasure_spot>& squares_amplifying_user_2P,
@@ -1615,7 +1615,7 @@ coordinate_and_value position::find_quick_winning_move(int max_number_moves_acce
         return solution;
     }
 
-    vector<vector<char>> assisting_board = *board;
+    string assisting_board = *board;
 
     for (const coordinate& current_move: possible_moves)
     {
@@ -1626,7 +1626,7 @@ coordinate_and_value position::find_quick_winning_move(int max_number_moves_acce
             piece_to_be_played = 'U';
         }
 
-        assisting_board[current_move.row][current_move.col] = piece_to_be_played;
+        assisting_board[index(current_move.row, current_move.col)] = piece_to_be_played;
 
         if (piece_to_be_played == 'C')
         {
@@ -1663,7 +1663,7 @@ coordinate_and_value position::find_quick_winning_move(int max_number_moves_acce
         {
             // current_move is a failure, so continue to the next move in for loop:
 
-            assisting_board[current_move.row][current_move.col] = ' ';
+            assisting_board[index(current_move.row, current_move.col)] = ' ';
 
             continue;
         }
@@ -1677,7 +1677,7 @@ coordinate_and_value position::find_quick_winning_move(int max_number_moves_acce
 
         for (const coordinate& opponent_response: p1->possible_moves)
         {
-            assisting_board[opponent_response.row][opponent_response.col] = piece_to_be_played;
+            assisting_board[index(opponent_response.row, opponent_response.col)] = piece_to_be_played;
 
             unique_ptr<position> p2 = make_unique<position>(assisting_board, !p1->is_comp_turn, opponent_response, empty_amplifying_vector,
                                                             empty_amplifying_vector, empty_amplifying_vector, empty_amplifying_vector);
@@ -1688,7 +1688,7 @@ coordinate_and_value position::find_quick_winning_move(int max_number_moves_acce
             {
                 can_opponent_win = true;
 
-                assisting_board[opponent_response.row][opponent_response.col] = ' ';
+                assisting_board[index(opponent_response.row, opponent_response.col)] = ' ';
 
                 break; // No need to consider other moves for the opponent, as there is one move that wins for the opponent.
                        // current_move is a failure.
@@ -1702,7 +1702,7 @@ coordinate_and_value position::find_quick_winning_move(int max_number_moves_acce
                 players_worst_performance_against_all_opponent_responses = number_of_moves_player_can_win_from_here;
             }
 
-            assisting_board[opponent_response.row][opponent_response.col] = ' ';
+            assisting_board[index(opponent_response.row, opponent_response.col)] = ' ';
 
             if (players_worst_performance_against_all_opponent_responses == UNDEFINED)
             {
@@ -1719,7 +1719,7 @@ coordinate_and_value position::find_quick_winning_move(int max_number_moves_acce
             }
         }
 
-        assisting_board[current_move.row][current_move.col] = ' ';
+        assisting_board[index(current_move.row, current_move.col)] = ' ';
     }
 
     return solution;
@@ -1729,7 +1729,7 @@ coordinate position::return_a_move_that_wins_immediately() const
 {
     // NOTE: if such a move doesn't exist, return {UNDEFINED, UNDEFINED}.
 
-    vector<vector<char>> assisting_board = *board;
+    string assisting_board = *board;
 
     char piece = 'C';
 
@@ -1740,7 +1740,7 @@ coordinate position::return_a_move_that_wins_immediately() const
 
     for (const coordinate& current_move: possible_moves)
     {
-        assisting_board[current_move.row][current_move.col] = piece;
+        assisting_board[index(current_move.row, current_move.col)] = piece;
 
         unique_ptr<position> pt = make_unique<position>(assisting_board, !is_comp_turn, current_move, empty_amplifying_vector,
                                                         empty_amplifying_vector, empty_amplifying_vector, empty_amplifying_vector);
@@ -1752,7 +1752,7 @@ coordinate position::return_a_move_that_wins_immediately() const
             return current_move;
         }
 
-        assisting_board[current_move.row][current_move.col] = ' ';
+        assisting_board[index(current_move.row, current_move.col)] = ' ';
     }
 
     return {UNDEFINED, UNDEFINED};
@@ -1845,11 +1845,11 @@ position_info_for_TT_v2 position::find_duplicate_in_TT(const unique_ptr<position
     // throw runtime_error("Did not find a duplicate in find_duplicate_in_TT()\n");
 }
 
-coordinate position::find_legal_square(const vector<vector<char>>& boardP, int col)
+coordinate position::find_legal_square(const string& boardP, int col)
 {
     for (int r = 5; r >= 0; r--)
     {
-        if (boardP[r][col] == ' ')
+        if (boardP[index(r, col)] == ' ')
         {
             coordinate result = {r, col};
 
@@ -1860,13 +1860,12 @@ coordinate position::find_legal_square(const vector<vector<char>>& boardP, int c
     throw runtime_error("The column is full\n");
 }
 
-unique_ptr<position> position::think_on_game_position(const vector<vector<char>>& boardP, bool is_comp_turnP, coordinate last_moveP,
+unique_ptr<position> position::think_on_game_position(const vector<vector<char>>& boardP_as_vec, bool is_comp_turnP, coordinate last_moveP,
                                     const vector<treasure_spot>& squares_amplifying_comp_2P, const vector<treasure_spot>& squares_amplifying_comp_3P,
                                     const vector<treasure_spot>& squares_amplifying_user_2P, const vector<treasure_spot>& squares_amplifying_user_3P,
                                     bool starting_new_game, coordinate& best_move, bool generate_best_move)
 {
-    // TODO - Make a string board, and make it represent the board that boardP does.
-    // Then use this string board in this function, instead of boardP.
+    const string boardP = convert_2D_vec_board_to_string(boardP_as_vec);
 
     const int max_depth_limit = UNDEFINED;
     // If this engine is doing a time_limited think, set the value of
@@ -2068,7 +2067,7 @@ unique_ptr<position> position::think_on_game_position(const vector<vector<char>>
 
         int col_of_best_move;
 
-        Database_Functions::get_info_for_position(boardP, is_comp_turnP,
+        Database_Functions::get_info_for_position(boardP_as_vec, is_comp_turnP,
                                                   db_evaluation, col_of_best_move);
 
         if (col_of_best_move != UNDEFINED)
@@ -2200,6 +2199,16 @@ void position::reset_board_of_bools(vector<vector<bool>>& board_of_bools, const 
 
 inline int position::index(int row, int col) {
     return col * 6 + row;
+}
+
+string position::convert_2D_vec_board_to_string(const vector<vector<char>>& boardP) {
+    string result = "";
+    for (int c = 0; c < 7; ++c) {
+        for (int r = 0; r < 6; ++r) {
+            result += boardP[r][c];
+        }
+    }
+    return result;
 }
 
 // PRIVATE METHODS:
@@ -3147,7 +3156,7 @@ void position::find_individual_player_evaluation(const shared_ptr<vector<treasur
     {
         coordinate current_square = space.current_square;
 
-        if ((*board)[current_square.row][current_square.col] == ' ' &&
+        if ((*board)[index(current_square.row, current_square.col)] == ' ' &&
             !board_of_squares_winning_for_player[current_square.row][current_square.col] &&
             (row_barriers[current_square.col] == UNDEFINED || row_barriers[current_square.col] <= current_square.row))
             // Second line applies the finished column algorithm.
@@ -3183,15 +3192,15 @@ void position::find_individual_player_evaluation(const shared_ptr<vector<treasur
         coordinate next_square = space.next_square;
         coordinate other_next_square = space.other_next_square;
 
-        if ((*board)[current_square.row][current_square.col] == ' ' &&
+        if ((*board)[index(current_square.row, current_square.col)] == ' ' &&
             !board_of_squares_winning_for_player[current_square.row][current_square.col] &&
             (row_barriers[current_square.col] == UNDEFINED || row_barriers[current_square.col] <= current_square.row))
         {
             bool is_next_square_in_bounds = is_in_bounds(next_square);
             bool is_other_next_square_in_bounds = is_in_bounds(other_next_square);
 
-            if ((is_next_square_in_bounds && (*board)[next_square.row][next_square.col] == piece) ||
-                (is_other_next_square_in_bounds && (*board)[other_next_square.row][other_next_square.col] == piece))
+            if ((is_next_square_in_bounds && (*board)[index(next_square.row, next_square.col)] == piece) ||
+                (is_other_next_square_in_bounds && (*board)[index(other_next_square.row, other_next_square.col)] == piece))
             {
                 coordinate_and_double temp;
 
@@ -3249,23 +3258,23 @@ void position::find_individual_player_evaluation(const shared_ptr<vector<treasur
                 outside_square_2.col = current_square.col - col_diff;
 
                 if (is_in_bounds(outside_square_1) &&
-                    (*board)[outside_square_1.row][outside_square_1.col] == piece)
+                    (*board)[index(outside_square_1.row, outside_square_1.col)] == piece)
                 {
                     continue;
                 }
 
                 if (is_in_bounds(outside_square_2) &&
-                    (*board)[outside_square_2.row][outside_square_2.col] == piece)
+                    (*board)[index(outside_square_2.row, outside_square_2.col)] == piece)
                 {
                     continue;
                 }
             }
 
-            bool is_next_square_empty = (is_in_bounds(next_square) && (*board)[next_square.row][next_square.col] == ' ' &&
+            bool is_next_square_empty = (is_in_bounds(next_square) && (*board)[index(next_square.row, next_square.col)] == ' ' &&
                                          !board_of_squares_winning_for_player[next_square.row][next_square.col] &&
                                          (row_barriers[next_square.col] == UNDEFINED || row_barriers[next_square.col] <= next_square.row));
 
-            bool is_other_next_square_empty = (is_in_bounds(other_next_square) && (*board)[other_next_square.row][other_next_square.col] == ' ' &&
+            bool is_other_next_square_empty = (is_in_bounds(other_next_square) && (*board)[index(other_next_square.row, other_next_square.col)] == ' ' &&
                                                !board_of_squares_winning_for_player[other_next_square.row][other_next_square.col] &&
                                                (row_barriers[other_next_square.col] == UNDEFINED ||
                                                row_barriers[other_next_square.col] <= other_next_square.row));
@@ -3357,15 +3366,15 @@ bool position::did_someone_win() const
 
 bool position::horizontal_four_combo() const
 {
-    if (last_move.col + 1 > max_col_index || (*board)[last_move.row][last_move.col + 1] != (*board)[index(last_move.row, last_move.col)])
+    if (last_move.col + 1 > max_col_index || (*board)[index(last_move.row, last_move.col+1)] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.col - 3 >= 0 &&
                 (*board)[index(last_move.row, last_move.col-3)] == (*board)[index(last_move.row, last_move.col)] &&
                 (*board)[index(last_move.row, last_move.col-2)] == (*board)[index(last_move.row, last_move.col)] &&
-                (*board)[last_move.row][last_move.col - 1] == (*board)[index(last_move.row, last_move.col)]);
+                (*board)[index(last_move.row, last_move.col-1)] == (*board)[index(last_move.row, last_move.col)]);
     }
 
-    if (last_move.col - 1 < 0 || (*board)[last_move.row][last_move.col - 1] != (*board)[index(last_move.row, last_move.col)])
+    if (last_move.col - 1 < 0 || (*board)[index(last_move.row, last_move.col-1)] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.col + 3 <= max_col_index &&
                 (*board)[index(last_move.row, last_move.col + 3)] == (*board)[index(last_move.row, last_move.col)] &&
@@ -3383,27 +3392,27 @@ bool position::vertical_four_combo() const
     // Therefore, I only need to check if there are 3 pieces under the last move, and if these pieces match the last move.
 
     return (last_move.row + 3 <= max_row_index &&
-            (*board)[last_move.row + 3][last_move.col] == (*board)[index(last_move.row, last_move.col)] &&
-            (*board)[last_move.row + 2][last_move.col] == (*board)[index(last_move.row, last_move.col)] &&
-            (*board)[last_move.row + 1][last_move.col] == (*board)[index(last_move.row, last_move.col)]);
+            (*board)[index(last_move.row+3, last_move.col)] == (*board)[index(last_move.row, last_move.col)] &&
+            (*board)[index(last_move.row+2, last_move.col)] == (*board)[index(last_move.row, last_move.col)] &&
+            (*board)[index(last_move.row+1, last_move.col)] == (*board)[index(last_move.row, last_move.col)]);
 }
 
 bool position::positive_slope_diagonal_four_combo() const
 {
     if (last_move.row - 1 < 0 ||
         last_move.col + 1 > max_col_index ||
-        (*board)[last_move.row - 1][last_move.col + 1] != (*board)[index(last_move.row, last_move.col)])
+        (*board)[index(last_move.row-1, last_move.col+1)] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.row + 3 <= max_row_index &&
                 last_move.col - 3 >= 0 &&
                 (*board)[index(last_move.row + 3, last_move.col - 3)] == (*board)[index(last_move.row, last_move.col)] &&
                 (*board)[index(last_move.row + 2, last_move.col - 2)] == (*board)[index(last_move.row, last_move.col)] &&
-                (*board)[last_move.row + 1][last_move.col - 1] == (*board)[index(last_move.row, last_move.col)]);
+                (*board)[index(last_move.row+1, last_move.col-1)] == (*board)[index(last_move.row, last_move.col)]);
     }
 
     if (last_move.row + 1 > max_row_index ||
         last_move.col - 1 < 0 ||
-        (*board)[last_move.row + 1][last_move.col - 1] != (*board)[index(last_move.row, last_move.col)])
+        (*board)[index(last_move.row+1, last_move.col-1)] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.row - 3 >= 0 &&
                 last_move.col + 3 <= max_col_index &&
@@ -3424,18 +3433,18 @@ bool position::negative_slope_diagonal_four_combo() const
 {
     if (last_move.row + 1 > max_row_index ||
         last_move.col + 1 > max_col_index ||
-        (*board)[last_move.row + 1][last_move.col + 1] != (*board)[index(last_move.row, last_move.col)])
+        (*board)[index(last_move.row+1, last_move.col+1)] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.row - 3 >= 0 &&
                 last_move.col - 3 >= 0 &&
                 (*board)[index(last_move.row-3, last_move.col-3)] == (*board)[index(last_move.row, last_move.col)] &&
                 (*board)[index(last_move.row-2, last_move.col-2)] == (*board)[index(last_move.row, last_move.col)] &&
-                (*board)[last_move.row - 1][last_move.col - 1] == (*board)[index(last_move.row, last_move.col)]);
+                (*board)[index(last_move.row-1, last_move.col-1)] == (*board)[index(last_move.row, last_move.col)]);
     }
 
     if (last_move.row - 1 < 0 ||
         last_move.col - 1 < 0 ||
-        (*board)[last_move.row - 1][last_move.col - 1] != (*board)[index(last_move.row, last_move.col)])
+        (*board)[index(last_move.row-1, last_move.col-1)] != (*board)[index(last_move.row, last_move.col)])
     {
         return (last_move.row + 3 <= max_row_index &&
                 last_move.col + 3 <= max_col_index &&
@@ -3457,19 +3466,6 @@ bool position::is_acceptable_letter(char c) const
     return (c >= 'A' && c <= 'G') || (c >= 'a' && c <= 'g');
 }
 
-bool position::is_element_in_vector(const vector<vector<vector<char>>>& vec, const vector<vector<char>>& element) const
-{
-    for (int i = 0; i < vec.size(); i++)
-    {
-        if (vec[i] == element)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 coordinate position::find_starting_horizontal_point() const
 {
     char piece = (*board)[index(last_move.row, last_move.col)];
@@ -3478,7 +3474,7 @@ coordinate position::find_starting_horizontal_point() const
 
     while (true)
     {
-        if (left_most_point.col - 1 < 0 || (*board)[left_most_point.row][left_most_point.col - 1] != piece)
+        if (left_most_point.col - 1 < 0 || (*board)[index(left_most_point.row, left_most_point.col-1)] != piece)
         {
             return left_most_point; // since the next square over left is either out-of-bounds or not equal to piece.
         }
@@ -3495,7 +3491,7 @@ coordinate position::find_ending_horizontal_point() const
 
     while (true)
     {
-        if (right_most_point.col + 1 > max_col_index || (*board)[right_most_point.row][right_most_point.col + 1] != piece)
+        if (right_most_point.col + 1 > max_col_index || (*board)[index(right_most_point.row, right_most_point.col+1)] != piece)
         {
             return right_most_point; // since the next square over right is either out-of-bounds or not equal to piece.
         }
@@ -3512,7 +3508,7 @@ coordinate position::find_ending_vertical_point() const
 
     while (true)
     {
-        if (bottom_most_point.row + 1 > max_row_index || (*board)[bottom_most_point.row + 1][bottom_most_point.col] != piece)
+        if (bottom_most_point.row + 1 > max_row_index || (*board)[index(bottom_most_point.row+1, bottom_most_point.col)] != piece)
         {
             return bottom_most_point; // since the next square down under is either out-of-bounds or not equal to piece.
         }
@@ -3531,7 +3527,7 @@ coordinate position::find_starting_positive_slope_diagonal_point() const
     {
         if (bottom_left_most_point.row + 1 > max_row_index ||
             bottom_left_most_point.col - 1 < 0 ||
-            (*board)[bottom_left_most_point.row + 1][bottom_left_most_point.col - 1] != piece)
+            (*board)[index(bottom_left_most_point.row+1, bottom_left_most_point.col-1)] != piece)
         {
             return bottom_left_most_point; // since the next square over down-left is either out-of-bounds or not equal to piece.
         }
@@ -3551,7 +3547,7 @@ coordinate position::find_ending_positive_slope_diagonal_point() const
     {
         if (top_right_most_point.row - 1 < 0 ||
             top_right_most_point.col + 1 > max_col_index ||
-            (*board)[top_right_most_point.row - 1][top_right_most_point.col + 1] != piece)
+            (*board)[index(top_right_most_point.row-1, top_right_most_point.col+1)] != piece)
         {
             return top_right_most_point; // since the next square up-right is either out-of-bounds or not equal to piece.
         }
@@ -3571,7 +3567,7 @@ coordinate position::find_starting_negative_slope_diagonal_point() const
     {
         if (top_left_most_point.row - 1 < 0 ||
             top_left_most_point.col - 1 < 0 ||
-            (*board)[top_left_most_point.row - 1][top_left_most_point.col - 1] != piece)
+            (*board)[index(top_left_most_point.row-1, top_left_most_point.col-1)] != piece)
         {
             return top_left_most_point; // since the next square up-left is either out-of-bounds or not equal to piece.
         }
@@ -3591,7 +3587,7 @@ coordinate position::find_ending_negative_slope_diagonal_point() const
     {
         if (bottom_right_most_point.row + 1 > max_row_index ||
             bottom_right_most_point.col + 1 > max_col_index ||
-            (*board)[bottom_right_most_point.row + 1][bottom_right_most_point.col + 1] != piece)
+            (*board)[index(bottom_right_most_point.row+1, bottom_right_most_point.col+1)] != piece)
         {
             return bottom_right_most_point; // since the next square over down-right is either out-of-bounds or not equal to piece.
         }
