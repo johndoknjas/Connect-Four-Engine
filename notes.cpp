@@ -1,6 +1,6 @@
 /* Version 52
 
-- Functional changes for V.52 so far:
+- Functional changes for V.52:
     - Get rid of three lines where a coordinate object is copied. Although the compiler may now
       have to do this itself, so maybe this doesn't actually speed things up.
     - Get rid of future_positions_size. Also bool is_child_pruned in minimax(), and coordinate current_move. Unecessary
@@ -56,11 +56,13 @@
     as efficient as passing by reference (which would likely be implementing using a pointer that is 64 bits). 
     Passing by reference has some indirection involved in accessing the value.
 
+- Profile the code, using gprof (https://www.youtube.com/watch?v=re79V7hNiBY). Then try to optimize any functions which are taking a large percentage of the time.
 
 - Get rid of 2D vectors, as accessing elements in them is relatively inefficient. Replace with 1D vectors or
   1D arrays. E.g., the 2D vector<vector<char>> board should be a one dimensional list, and it can easily represent
   a 2D board. Also the hash_values_of_squares_with_C can be a 1D array, and this should help since they get
-  accessed by the third constructor. Also the board_of_squares_winning_for_player/comp should be 1D.
+  accessed by the third constructor. Also the board_of_squares_winning_for_user/comp should be 1D (or even better, make these two vars be long longs, where each of the
+  42 squares is represented by 1 bit, and gets bitset when the square is winning for the player).
      - For storing 2D vectors (that represented a board) as 1D, decide whether you want them to look like this:
        [R1C1, R1C2, R1C3,...., R2C1, R2C2, etc] or
        [C1R1, C1R2, C1R3,...., C2R1, C2R2, etc].
@@ -68,15 +70,9 @@
        be closer in the array could be very slightly beneficial? So it depends on whether you think a piece being played
        in a square means it's more likely for that square's column or row to be used subsequently in the program's run.
 
-     - Could also store some data (esp. the board) as a string, which like an array would have 42 chars contiguously stored in memory.
-       The reason for using a string specifically is because the std::unordered_map uses the std::hash function, and one of its
-       specializations is for strings. There is no std::hash specialization for std::array, so you'd have to use your own hash function.
-            - I tested inserting strings of 42 chars in size (similar to a Connect Four board) into an unordered_map. It generally takes
-              between 0.01 and 0.015 seconds to insert 25000 into the map, which isn't that bad. I'm not sure whether the Connect Four engine usually goes
-              through less or more nodes than 25000 on average.
-            - Run a timeit experiment on each function in the Position class. If functions involving the TT are taking most of the time, then this stuff
-              with unordered_map should be good, since 0.01 to 0.015 seconds won't be much of a price to pay. Note that when you're measuring how long
-              a function takes, it would also count how long each of the function's callees take.
+      - If unordered_map is eventually used as the hash table, then since the board is now a string, it could make a key for it. But zobrist hashing
+         is probably more efficient (less work to do on each node) - unless you can find a way to combine zobrist hashing with unordered_map.
+
 
       - May be tricky to implement the TT as a 1D array/vector, since the bucket sizes are variable. But consider
         using some built-in C++ hash structure.
@@ -121,7 +117,6 @@
   And then just make sure to only use elements that are within the bounds of what should be used in the array.
 
 - Replace std::vector with std::array, where applicable (or even just raw arrays, on the stack or as static memory).
-- Get rid of the future_positions_size int variable (not used anywhere).
 - Try to avoid using the heap, ideally everywhere (maybe this is possible?). Whenever a unique pointer/shared pointer is declared, the heap is being used.
   For passing parameters to the 3rd constructor (recursively), passing a std::array (or a pointer to the std::array) should
   work, and allow modifications to the original if desired.
