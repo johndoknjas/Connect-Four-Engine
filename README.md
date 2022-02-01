@@ -12,7 +12,8 @@ After downloading, copy this DB file to some directory on your computer.
 
 Also, please install sqlite3, if it's not on your computer. The program uses the splite3 C/C++ API to interface with the database.
 
-After doing this, you can run a.exe directly, if you just want to play against the engine in the raw C++ ASCI interface.
+After doing this, you can run a.exe directly, if you just want to play against the engine in the raw C++ ASCI interface. It's also possible to
+compile the C++ source code yourself. To do this, type the following in the terminal: g++ main.cpp -O2 -l sqlite3. This will generate a new a.exe file.
 
 If you'd prefer to play using a Python GUI I built, go inside the python-gui directory and open the command prompt. If you don't have pyinstaller, 
 install it with "pip install pyinstaller". Then type "pyinstaller interface.py" - we're only interested in the dist/interface directory that gets created.
