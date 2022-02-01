@@ -1,4 +1,9 @@
 Crash report file at time*.txt
-a.exe
 position.exe
+a.exe
 *.s
+*.docx
+
+__pycache__/
+build/
+dist/

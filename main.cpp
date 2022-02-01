@@ -44,34 +44,12 @@ void display_board(vector<vector<char>> board, bool x_represents_user,
 {
     // First, change the 'C' and 'U' in board to 'X' and 'O', depending on if 'X' or 'O' represents the user...
 
-    for (int row = 0; row <= 5; row++)
-    {
-        for (int col = 0; col <= 6; col++)
-        {
-            if (board[row][col] == 'U')
-            {
-                if (x_represents_user)
-                {
-                    board[row][col] = 'X';
-                }
-
-                else
-                {
-                    board[row][col] = 'O';
-                }
-            }
-
-            else if (board[row][col] == 'C')
-            {
-                if (x_represents_user) // so 'O' represents the computer:
-                {
-                    board[row][col] = 'O';
-                }
-
-                else
-                {
-                    board[row][col] = 'X';
-                }
+    for (int row = 0; row <= 5; row++) {
+        for (int col = 0; col <= 6; col++) {
+            if (board[row][col] == 'U') {
+                board[row][col] = x_represents_user ? 'X' : 'O';
+            } else if (board[row][col] == 'C') {
+                board[row][col] = x_represents_user ? 'O' : 'X';
             }
         }
     }
@@ -122,13 +100,10 @@ vector<coordinate> get_all_squares_filled_by_piece(const vector<vector<char>>& b
 
     vector<coordinate> squares;
 
-    for (int r = 0; r < 6; r++)
-    {
-        for (int c = 0; c < 7; c++)
-        {
+    for (int r = 0; r < 6; r++) {
+        for (int c = 0; c < 7; c++) {
             if ((board[r][c] == 'U' && looking_for_x == x_represents_user) ||
-                (board[r][c] == 'C' && looking_for_x != x_represents_user))
-            {
+                (board[r][c] == 'C' && looking_for_x != x_represents_user)) {
                 squares.push_back({r,c});
             }
         }
@@ -178,16 +153,9 @@ unique_ptr<position> get_to_chosen_starting_position(bool does_comp_go_first, co
     position::thinking_time = 0; // temporarily reducing it, until reaching the actual starting position for the game.
 
     // Now, I need to figure out if a 'C' or 'U' should be played first on the empty board.
-    // The "does_comp_go_first" param stores who goes first in the actual starting position played, 4-9 moves later.
+    // The "does_comp_go_first" param stores who will go first in the actual starting position played, 4-9 moves later.
 
-    bool does_comp_move_first_in_empty_board = true;
-
-    if ((does_comp_go_first && set_of_moves.size() % 2 != 0) || (!does_comp_go_first && set_of_moves.size() % 2 == 0))
-    {
-        // In either case, 'U' should be the first piece placed on the empty board:
-
-        does_comp_move_first_in_empty_board = false;
-    }
+    bool does_comp_move_first_in_empty_board = does_comp_go_first == (set_of_moves.size() % 2 == 0);
 
     unique_ptr<position> pt = position::think_on_game_position(does_comp_move_first_in_empty_board, true,
                                                                placeholder, false);
@@ -237,40 +205,25 @@ unique_ptr<position> get_to_chosen_starting_position(bool does_comp_go_first, co
     return move(pt);
 }
 
-bool is_board_empty(const vector<vector<char>>& board)
-{
-    for (int r = 0; r < 6; r++)
-    {
-        for (int c = 0; c < 7; c++)
-        {
-            if (board[r][c] != ' ')
-            {
+bool is_board_empty(const vector<vector<char>>& board) {
+    for (int r = 0; r < 6; ++r) {
+        for (int c = 0; c < 7; ++c) {
+            if (board[r][c] != ' ') {
                 return false;
             }
         }
     }
-
     return true;
 }
 
-vector<vector<char>> flip_board(vector<vector<char>> board)
-{
-    for (int r = 0; r < 6; r++)
-    {
-        for (int c = 0; c < 7; c++)
-        {
-            if (board[r][c] == 'C')
-            {
-                board[r][c] = 'U';
-            }
-
-            else if (board[r][c] == 'U')
-            {
-                board[r][c] = 'C';
+vector<vector<char>> flip_board(vector<vector<char>> board) {
+    for (int r = 0; r < 6; r++) {
+        for (int c = 0; c < 7; c++) {
+            if (board[r][c] != ' ') {
+                board[r][c] = board[r][c] == 'C' ? 'U' : 'C';
             }
         }
     }
-
     return board;
 }
 
@@ -281,7 +234,7 @@ void think_while_user_is_thinking(vector<vector<char>> board, bool is_comp_turn,
                                   const vector<treasure_spot>& squares_amplifying_user_3,
                                   bool starting_new_game, coordinate* predicted_move, coordinate* best_response)
 {
-    num_other_threads_running ++;
+    ++num_other_threads_running;
 
     // First, try to predict what move the user will choose.
     // Do this by thinking for around 0.3 seconds, and then finding the best move.
@@ -325,11 +278,10 @@ void think_while_user_is_thinking(vector<vector<char>> board, bool is_comp_turn,
 
     position::thinking_time = old_thinking_time;
 
-    num_other_threads_running --;
+    --num_other_threads_running;
 }
 
-int get_column_user_wants_to_move_in(const unique_ptr<position>& pt)
-{
+int get_column_user_wants_to_move_in(const unique_ptr<position>& pt) {
     // Function returns the column the user wants to move in.
 
     string user_input = "";
@@ -342,8 +294,7 @@ int get_column_user_wants_to_move_in(const unique_ptr<position>& pt)
 
     cin.ignore(INT_MAX, '\n');
 
-    while (!pt->is_valid_move(user_input))
-    {
+    while (!pt->is_valid_move(user_input)) {
         cout << "You entered an invalid move. Please try again: ";
 
         cin >> user_input;
@@ -355,17 +306,7 @@ int get_column_user_wants_to_move_in(const unique_ptr<position>& pt)
 
     // Now I know the user inputted a valid move, so figure out what col they meant:
 
-    char letter = user_input[0];
-
-    if (letter >= 'a') // lowercase:
-    {
-        return static_cast<int>(letter - 'a');
-    }
-
-    else // uppercase:
-    {
-        return static_cast<int>(letter - 'A');
-    }
+    return user_input[0] >= 'a' ? static_cast<int>(user_input[0] - 'a') : static_cast<int>(user_input[0] - 'A');
 }
 
 void wait(double waiting_time)
@@ -380,11 +321,11 @@ void wait(double waiting_time)
 
 void use_thread_to_reset_TT()
 {
-    num_other_threads_running ++;
+    ++num_other_threads_running;
 
     position::reset_transposition_table();
 
-    num_other_threads_running --;
+    --num_other_threads_running;
 }
 
 void crash_if_Python_ends()
@@ -394,23 +335,17 @@ void crash_if_Python_ends()
 
     // The function returns true if the entire program should crash.
 
-    num_other_threads_running ++;
+    ++num_other_threads_running;
 
     int current_time_point = time(NULL);
 
-    while (true)
-    {
-        if (received_input)
-        {
+    while (true) {
+        if (received_input) {
             received_input = false; // In preparation for next time.
-
-            num_other_threads_running --;
-
+            --num_other_threads_running;
             return;
         }
-
-        if (time(NULL) - current_time_point >= 2)
-        {
+        if (time(NULL) - current_time_point >= 2) {
             // It has been 4 seconds, so check again if the signal.txt file
             // has been created. This would mean the Python program ended
             // abruptly (by the user closing the GUI), which means
@@ -418,10 +353,8 @@ void crash_if_Python_ends()
 
             current_time_point = time(NULL); // for next time.
 
-            if (ifstream("signal.txt"))
-            {
+            if (ifstream("signal.txt")) {
                 // Crash this program:
-
                 break;
             }
         }
@@ -433,8 +366,7 @@ void crash_if_Python_ends()
     // Therefore, the global flag to crash this program should be set to true.
 
     should_crash_program = true;
-
-    num_other_threads_running --;
+    --num_other_threads_running;
 }
 
 void prepare_to_throw(string error_message, thread* thread_ptr)
@@ -541,31 +473,16 @@ void write_squares_to_file(const vector<vector<char>>& board, bool x_represents_
 
     int test_counter = 0;
 
-    for (int r = 0; r < 6; r++)
-    {
-        for (int c = 0; c < 7; c++)
-        {
-            int value_to_write = 0;
-
-            if ((board[r][c] == 'U' && x_represents_user) ||
-                (board[r][c] == 'C' && !x_represents_user))
-            {
-                value_to_write = 1;
+    for (int r = 0; r < 6; r++) {
+        for (int c = 0; c < 7; c++) {
+            if (board[r][c] == ' ') {
+                fout << 0;
             }
-
-            else if (board[r][c] != ' ')
-            {
-                // Board has a piece in it, but isn't an X. So it must be an O:
-
-                value_to_write = 2;
+            else {
+                fout << (x_represents_user == (board[r][c] == 'U') ? 1 : 2);
             }
-
-            fout << value_to_write;
-
-            test_counter ++;
-
-            if (!(r == 5 && c == 6))
-            {
+            ++test_counter;
+            if (!(r == 5 && c == 6)) {
                 // Not on the last entry for the file, so do a normal newline.
                 fout << "\n";
             }
@@ -574,7 +491,7 @@ void write_squares_to_file(const vector<vector<char>>& board, bool x_represents_
 
     fout.close();
 
-    current_textfile_num ++;
+    ++current_textfile_num;
     current_textfile_name = to_string(current_textfile_num) + ".txt";
 
     if (test_counter != 42)
@@ -616,15 +533,7 @@ void set_pregame_data(bool& user_goes_first, bool& x_represents_user, thread* th
         cin.clear();
         cin.ignore(INT_MAX, '\n');
 
-        if (user_input == "y" || user_input == "Y")
-        {
-            user_goes_first = true;
-        }
-
-        else
-        {
-            user_goes_first = false;
-        }
+        user_goes_first = user_input == "y" || user_input == "Y";
 
         cout << "Enter X to play X; otherwise, enter O (or anything else): ";
 
@@ -632,15 +541,7 @@ void set_pregame_data(bool& user_goes_first, bool& x_represents_user, thread* th
         cin.clear();
         cin.ignore(INT_MAX, '\n');
 
-        if (user_input == "x" || user_input == "X")
-        {
-            x_represents_user = true;
-        }
-
-        else
-        {
-            x_represents_user = false;
-        }
+        x_represents_user = user_input == "x" || user_input == "X";
     }
 }
 
