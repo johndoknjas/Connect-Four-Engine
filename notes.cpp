@@ -16,6 +16,15 @@
 
 
 
+- Memory seems to be accumulating somehow. In the versus sim (depth = 9), V.51 and V.52 slowly
+  use more and more memory; not enough to cause a crash before 500 trials are up (only like 1-2 GBs
+  are used), but it's still odd. Also, when I play against the engine and spend a while making my
+  move (allowing it to spend a lot of time thinking on my turn), memory usage is accumulating
+  much quicker.
+    - It seems like the TT is reset fully after each game, and other static data in the position
+      class doesn't seem to be increasing in size in any way. Maybe try running valgrind? Not
+      sure if that would help here.
+    - Started investigating this stuff in the branch "debugging-accumulated-memory-usage".
 
 /* Ways to build on Zobrist Hashing from Version 51:
   - Although the zobrist hashing increased the speed by 5%, there may be potential for more. E.g., the comment and answer
@@ -176,6 +185,10 @@
   Good resource - allows you to see the assembly output by gcc, mapped to the C++ code.
 
   Using the compiler flag -Winline with gcc will warn you when a function won't be inlined.
+
+- An option to try multithreading is to make static variables into some pointer/reference types, and pass them from parent nodes to child nodes (like the board, for example).
+  So, each thread would have its own TT. However, I don't recommend doing this -- will likely be very convoluted, and it's not clear whether this would even make the minimax
+  algorithm more efficient in the first place. Even if this did improve the engine, maintainability would suffer.
 
 ----------------------------------------------------------------------------
 Jan 2022 onward stuff above this line.
