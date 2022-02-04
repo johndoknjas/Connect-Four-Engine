@@ -67,46 +67,41 @@
 
 - Profile the code, using gprof (https://www.youtube.com/watch?v=re79V7hNiBY). Then try to optimize any functions which are taking a large percentage of the time.
 
-- Get rid of 2D vectors, as accessing elements in them is relatively inefficient. Replace with 1D vectors or
-  1D arrays. E.g., the 2D vector<vector<char>> board should be a one dimensional list, and it can easily represent
-  a 2D board. Also the hash_values_of_squares_with_C can be a 1D array, and this should help since they get
-  accessed by the third constructor. Also the board_of_squares_winning_for_user/comp should be 1D (or even better, make these two vars be long longs, where each of the
+- If a move is forced (due to the oppponent threatening a 4-in-a-row), one idea is to not count it as increasing the depth by 1 ply. This will allow the engine to go
+  deeper into this subtree. However, you'd have to figure out what depth to store in the TT, when to use a duplicate in the TT with x depth, etc.
+
+- Get rid of 2D vectors, as accessing elements in them is relatively inefficient. Replace with 1D vectors/std::arrays, or strings. 
+  E.g., the 2D vector<vector<char>> board is now a string (increased performance by over 25% in V.52).
+  The random_values_for_squares_with_C/U can be a 1D array, and this should help performance a little since they get accessed by the third constructor. 
+  Also the board_of_squares_winning_for_user/comp should be 1D (or even better, make these two vars be long longs, where each of the
   42 squares is represented by 1 bit, and gets bitset when the square is winning for the player).
-     - For storing 2D vectors (that represented a board) as 1D, decide whether you want them to look like this:
-       [R1C1, R1C2, R1C3,...., R2C1, R2C2, etc] or
-       [C1R1, C1R2, C1R3,...., C2R1, C2R2, etc].
-       Shouldn't matter much since the array is only 42 elements, but maybe making elements that are used more often together
-       be closer in the array could be very slightly beneficial? So it depends on whether you think a piece being played
-       in a square means it's more likely for that square's column or row to be used subsequently in the program's run.
 
-      - If unordered_map is eventually used as the hash table, then since the board is now a string, it could make a key for it. But zobrist hashing
-         is probably more efficient (less work to do on each node) - unless you can find a way to combine zobrist hashing with unordered_map.
-
-
-      - May be tricky to implement the TT as a 1D array/vector, since the bucket sizes are variable. But consider
-        using some built-in C++ hash structure.
-            - Such as std::unordered_map. Best case complexity is O(1), worst case is O(n) (if your hash function was so bad
-              that it stored all the data in one single bucket). So complexity should be quite close to O(1).
-            - Another option is std::map, which you could experiment with using instead of unordered_map to see if it increases speed.
-                - There's a chance map will be better if a lot of insertion/deletion is happening, but even here who knows.
-                - unordered_map seems to generally be faster, when you have a big table and order doesn't matter.
-      - For any two elemnts (including strings), the odds of them having them same hash (from std::hash)
-        approaches 1 / numeric_limits - so roughly 1 in 2 billion? This means that almost all buckets
-        should just have one element in them (meaning a for loop through the bucket will almost always
-        only loop once - helps branch prediction). Although the loops you currently have may be changed,
-        depending on how unordered_map works - don't know.
-            - Problem(?): Turns out the engine goes through a few million nodes per game, so this means
-              std::hash would be called millions of times on strings that are 42 characters in size.
-              May have bad performance (but could still check it?).
-            - Idea: if you use unordered_map, don't store a copy of the board (in a position_info_for_TT object).
-              The chance of a hash collision is already very unlikely, so you could just store the hash value you're
-              currently using, and use it as a second check when referencing an element in the unordered_map.
-              This saves on having to copy a vector, the heap memory to store it, and the cost of comparing a board
-              to a board in the TT to ensure it's the right element.
-            - In the benchmarking-code branch, I'm now outputting statistics for the TT. You
-              could continue to play around with it to see if there are any ideas to improve it.
-            - It would be interesting to see which buckets in the TT get filled. E.g., are
-              they mainly ones between 100,000 - 200,000, or 400,000 - 600,000, etc.
+- If unordered_map is eventually used as the hash table (see below), then since the board is now a string, it could make a key for it. But zobrist hashing
+  is probably more efficient (less work to do on each node) - unless you can find a way to combine zobrist hashing with unordered_map.
+- May be tricky to implement the TT as a 1D array/vector, since the bucket sizes are variable. But consider
+  using some built-in C++ hash structure.
+      - Such as std::unordered_map. Best case complexity is O(1), worst case is O(n) (if your hash function was so bad
+        that it stored all the data in one single bucket). So complexity should be quite close to O(1).
+      - Another option is std::map, which you could experiment with using instead of unordered_map to see if it increases speed.
+          - There's a chance map will be better if a lot of insertion/deletion is happening, but even here who knows.
+          - unordered_map seems to generally be faster, when you have a big table and order doesn't matter.
+- For any two elemnts (including strings), the odds of them having them same hash (from std::hash)
+  approaches 1 / numeric_limits - so roughly 1 in 2 billion? This may not be correct, but if so then it means that almost all buckets
+  should just have one element in them (meaning a for loop through the bucket will almost always
+  only loop once - helps branch prediction). Although the loops you currently have may be changed,
+  depending on how unordered_map works - don't know.
+      - Problem(?): Turns out the engine goes through a few million nodes per game, so this means
+        std::hash would be called millions of times on strings that are 42 characters in size.
+        May have bad performance (but could still check it?).
+      - Idea: if you use unordered_map, don't store a copy of the board (in a position_info_for_TT object).
+        The chance of a hash collision is already very unlikely, so you could just store the hash value you're
+        currently using, and use it as a second check when referencing an element in the unordered_map.
+        This saves on having to copy a vector, the heap memory to store it, and the cost of comparing a board
+        to a board in the TT to ensure it's the right element.
+      - In the benchmarking-code branch, I'm now outputting statistics for the TT. You
+        could continue to play around with it to see if there are any ideas to improve it.
+      - It would be interesting to see which buckets in the TT get filled. E.g., are
+        they mainly ones between 100,000 - 200,000, or 400,000 - 600,000, etc.
 
 - See if, when in a time limited search, it's now beneficial in some new places to let the engine search, instead of
   relying on the DB. The reason for checking this out is that this new computer is a lot faster, so maybe there's some
@@ -115,8 +110,9 @@
 - For declaring raw arrays / std::arrays, if you don't use new then they should point to the stack or to static memory. If such
   arrays are fields of the Position class though, and if you can't avoid declaring objects of Position on the heap (otherwise a 
   stack overflow??, not sure), then will these array fields point to memory on the stack, static, or heap?
-     - In any case, a fixed-sized array should have its elements stored contiguously, whether it be in any of these storage categories.
-       So it should only have a marginal affect on performance, if its elements are on the heap.
+     - In any case, a 1D list should have its elements stored contiguously, whether it be in any of these storage categories.
+       So it should only have a marginal affect on performance, if its elements are on the heap (and the heap might be just as good or better in the case of
+       contiguous items, who knows).
      - If the elements are on the stack or static, then this will only be an issue if there is some stack overflow (but then you'd know
        since the program will crash, especially after running the Versus Sim).
 
@@ -125,7 +121,7 @@
   how many of the array's elements are actually being used. So when adding/"deleting" from it, just change the value of this int.
   And then just make sure to only use elements that are within the bounds of what should be used in the array.
 
-- Replace std::vector with std::array, where applicable (or even just raw arrays, on the stack or as static memory).
+- Replace std::vector with std::array, where applicable.
 - Try to avoid using the heap, ideally everywhere (maybe this is possible?). Whenever a unique pointer/shared pointer is declared, the heap is being used.
   For passing parameters to the 3rd constructor (recursively), passing a std::array (or a pointer to the std::array) should
   work, and allow modifications to the original if desired.
@@ -133,26 +129,16 @@
      - But still try to replace std::vector with std::array, since the elements in std::array should be stored on the stack,
        even if the std::array pointer variable is on the heap (I think?).
 
-- In general, it seems like the engine should be faster, since it's written in C++ and is only going over thousands of nodes.
-  - Correction: the engine is actually going over a few million nodes per game, so it does seem to be
-    reasonably fast as is.
-
-- Everything seems to be running fine now, so you can start working on the optimization stuff above.
-  Note though that for the Bin and Debug folders, not sure if VSCode is using them, or if they were just a CodeBlocks thing.
-  If they don't get modified at all in the future, try to rearrange the project structure to not have the Python stuff
-  inside these folders.
-
-- Change the board of bools (currently 2-D vectors) to strings (or std::array, since they won't
-  be used by unordered_map for hashing).
-
 - https://stackoverflow.com/questions/3628081/shared-ptr-horrible-speed
    - Consider passing shared_ptrs by reference, instead of by value (see the top answer).
-   - Could also stop using shared_ptr altogether, and just use raw pointers. E.g.,
+   - Could also stop using shared_ptr altogether, and just use raw pointers (or even better, a reference!). E.g.,
      if all the nodes have a raw pointer to the same board on the heap, then even if there 
      is a memory leak, it would be insignificant.
    - Also, is using the heap even needed? If you have a pointer to a board on the stack, 
      such as a pointer to a string on the stack (string's chars will be on heap still though),
      and then pass that pointer to a child node, should work?
+   - Or, instead of using pointers in the first place, pass a reference instead. This will allow you to avoid dereferencing all the time, which will make the code a bit
+     cleaner, and may or may not increase performance (but definitely shouldn't hurt it?).
    
    - Maybe a better idea is to just pass stuff by reference to the 3rd constructor? E.g., for a string board, just
      make the parameter (string& boardP). This avoids overhead from shared_ptr, and also avoids having to dereference
@@ -170,21 +156,24 @@
 
         - https://www.geeksforgeeks.org/references-in-c/
 
+        - Or, for stuff you pass by reference, could just make these members static. Just make sure that if two instances of position are being used,
+          the board is updated / reverted to the state that the other needs when it's about to go again.
+        - In think_on_game_position, when the find_best_move function is called, the static board would have to be updated.
+        - Also, if the first constructor is called, the static board would be updated to be the empty board.
+        - The board would only match one instance of position at a time, so if there's a case (like in main.cpp?) where the board needs to be retrieved from
+          two instances of position, might be a problem. But I don't think this is an issue anywhere.
+
 - See where inlining may increase performance (don't do excessive inlining though).
   Inlining may be helpful for small functions that are called many times.
   Use the inline keyword -- although note that this is just a suggestion to the compiler to inline,
   it doesn't force it to. To force gcc, also use: __attribute__((always_inline)).
   https://stackoverflow.com/questions/8381293/how-do-i-force-gcc-to-inline-a-function
-    - Another option is to just use the inline keyword, which hints/suggests to the compiler that the code
-      should be inlined. Especially after compiling with
-      -O2, gcc is very likely to inline your function (if it doesn't, probably has a good reason?).
+    - Especially after compiling with -O2, gcc should be likely to inline your function if it will help.
       -O2 includes the -finline-functions flag (https://gcc.gnu.org/onlinedocs/gcc/Optimize-Options.html).
       You can always check the resulting assembly with the link below:
-  
-  https://gcc.godbolt.org/
-  Good resource - allows you to see the assembly output by gcc, mapped to the C++ code.
-
-  Using the compiler flag -Winline with gcc will warn you when a function won't be inlined.
+    - https://gcc.godbolt.org/
+       Good resource - allows you to see the assembly output by gcc, mapped to the C++ code.
+    - Using the compiler flag -Winline with gcc will warn you when a function won't be inlined.
 
 - An option to try multithreading is to make static variables into some pointer/reference types, and pass them from parent nodes to child nodes (like the board, for example).
   So, each thread would have its own TT. However, I don't recommend doing this -- will likely be very convoluted, and it's not clear whether this would even make the minimax
