@@ -76,6 +76,10 @@
   Also the board_of_squares_winning_for_user/comp should be 1D (or even better, make these two vars be long longs, where each of the
   42 squares is represented by 1 bit, and gets bitset when the square is winning for the player).
 
+- Sometimes when playing against the computer, it hangs for a long time (this doesn't happen that often though). I'm guessing this is mainly due to playing it
+  on a faster computer, since occasionally it could finish the search for a fairly high depth before 1 second, and then iterate into a 1 higher depth search
+  before the 1 second is up. If you want to test this, you could play against an older version of the engine on the current computer.
+
 - If unordered_map is eventually used as the hash table (see below), then since the board is now a string, it could make a key for it. But zobrist hashing
   is probably more efficient (less work to do on each node) - unless you can find a way to combine zobrist hashing with unordered_map.
 - May be tricky to implement the TT as a 1D array/vector, since the bucket sizes are variable. But consider

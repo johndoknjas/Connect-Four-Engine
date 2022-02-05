@@ -1,0 +1,7 @@
+For 1.png, the engine was playing the yellow pieces, and it moved to C3, allowing C4. We ended up drawing this game.
+
+For 2.png, the engine was playing the yellow pieces, and it moved to E3, allowing me to play E4 (and I'm the one who benefits
+more from odd squares). In addition, it then spent a very long time thinking (likely 20+ seconds), before playing A4. I won this game.
+
+Both of these cases involve the engine allowing its opponent to create a threat on D3, and when odd squares benefit the opponent.
+I think this has been an occasional issue with previous versions of the engine as well.
