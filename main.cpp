@@ -977,11 +977,11 @@ vector<string> get_board_representations_of_move_sets(const vector<vector<coordi
     vector<string> boards_representing_moves;
     for (const vector<coordinate>& current_set_of_moves: vec) {
         string current_board = string(42, ' ');
-        // Now I'll put a 'C' char into spots of the board that the moves in current_set_of_moves
-        // map to. Any char would work, 'C' isn't special.
+        // Now I'll put 'C' for the first move, then 'U', then 'C', etc. Letting 'U' go first
+        // would also work completely fine.
         for (int i = 0; i < current_set_of_moves.size(); ++i) {
             current_board[position::index(current_set_of_moves[i].row, 
-                                          current_set_of_moves[i].col)] = 'C';
+                                          current_set_of_moves[i].col)] = i % 2 == 0 ? 'C' : 'U';
         }
         boards_representing_moves.push_back(current_board);
     }
