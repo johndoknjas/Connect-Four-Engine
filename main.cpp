@@ -996,7 +996,7 @@ vector<string> get_board_representations_of_move_sets(const vector<vector<coordi
 
 bool duplicate_sets_of_moves(const vector<vector<coordinate>>& vec) {
     vector<string> boards_representing_moves = get_board_representations_of_move_sets(vec);
-    set<int> s(boards_representing_moves.begin(), boards_representing_moves.end());
+    set<string> s(boards_representing_moves.begin(), boards_representing_moves.end());
     return s.size() != boards_representing_moves.size();
 }
 
