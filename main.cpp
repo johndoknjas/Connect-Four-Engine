@@ -42,10 +42,8 @@ int num_other_threads_running = 0;
 // Then, when the thread finishes, decrement this variable.
 
 void display_board(vector<vector<char>> board, bool x_represents_user,
-                   bool is_starting_position, coordinate last_move)
-{
-    // First, change the 'C' and 'U' in board to 'X' and 'O', depending on if 'X' or 'O' represents the user...
-
+                   bool is_starting_position, coordinate last_move) {
+    // Replace the 'C' and 'U' chars with 'X' and 'O'.
     for (int row = 0; row <= 5; row++) {
         for (int col = 0; col <= 6; col++) {
             if (board[row][col] == 'U') {
@@ -56,95 +54,47 @@ void display_board(vector<vector<char>> board, bool x_represents_user,
         }
     }
 
-    // Print who moved, and to where, assuming there is a last move (only not the case when this is the starting position).
-
-    if (!is_starting_position)
-    {
-        if (last_move.row == position::UNDEFINED)
-        {
+    // Print who moved, and to where, assuming there is a last move 
+    // (only not the case when this is the starting position).
+    if (!is_starting_position) {
+        if (last_move.row == position::UNDEFINED) {
             throw runtime_error("last_move is UNDEFINED even though this isn't the starting position.\n");
         }
-
-        if ((board[last_move.row][last_move.col] == 'X') == (x_represents_user)) // testing for a logical equivalence between two boolean values.
-        {
+        if (x_represents_user == (board[last_move.row][last_move.col] == 'X')) {
             cout << "\nYou just moved to square: ";
-        }
-
-        else
-        {
+        } 
+        else {
             cout << "The computer just moved to square: ";
         }
-
         cout << char('A' + last_move.col) << (6 - last_move.row) << "\n";
     }
 
+    // Print the board:
     cout << "\n    A   B   C   D   E   F   G\n\n";
-
-    for (int row = 0; row <= 5; row++)
-    {
-        cout << (6 - row) << " | "; // Since I want row numbers to be displayed increasing from bottom up, not top down.
-
-        for (int col = 0; col <= 6; col++)
-        {
+    for (int row = 0; row < 6; ++row) {
+        cout << (6 - row) << " | "; // Since I want row numbers to be displayed increasing from 
+                                    // the bottom up, not from the top down.
+        for (int col = 0; col < 7; ++col) {
             cout << board[row][col] << " | ";
         }
-
         cout << "\n" << "  |---|---|---|---|---|---|---|\n";
     }
 }
 
-vector<coordinate> get_all_squares_filled_by_piece(const vector<vector<char>>& board,
-                                                   bool x_represents_user,
-                                                   bool looking_for_x)
-{
-    // Board has 'U' and 'C' pieces. Return the squares containing X's or O's,
-    // depending on the truth value of the "looking_for_x" parameter.
-
-    vector<coordinate> squares;
-
-    for (int r = 0; r < 6; r++) {
-        for (int c = 0; c < 7; c++) {
-            if ((board[r][c] == 'U' && looking_for_x == x_represents_user) ||
-                (board[r][c] == 'C' && looking_for_x != x_represents_user)) {
-                squares.push_back({r,c});
-            }
-        }
-    }
-
-    return squares;
-}
-
-void remove_set_at_index(vector<vector<coordinate>>& vec, int index)
-{
-    if (vec.empty())
-    {
-        throw runtime_error("vec is empty in remove_set_at_index()\n");
-    }
-
-    vec[index] = vec[vec.size()-1];
-
-    vec.pop_back();
-}
-
 unique_ptr<position> get_to_chosen_starting_position(bool does_comp_go_first, const vector<coordinate> set_of_moves,
-                                                     bool set_of_moves_supposed_to_be_empty)
-{
+                                                     bool set_of_moves_supposed_to_be_empty) {
     // Get the Engine to play out the set_of_moves param, and only think for a reasonable amount of time
     // on the last move (since that's where the game begins).
 
-    if (set_of_moves_supposed_to_be_empty && set_of_moves.empty())
-    {
+    if (set_of_moves_supposed_to_be_empty && set_of_moves.empty()) {
         // So the game is supposed to begin in the empty starting position.
-
         unique_ptr<position> pt = position::think_on_game_position(does_comp_go_first, true,
                                                                    placeholder, false);
-
         return move(pt);
     }
 
-    if (set_of_moves.empty() || set_of_moves_supposed_to_be_empty)
-    {
-        // This basically checks that set_of_moves_supposed_to_be_empty and the size of set of moves equaling 0 are not
+    if (set_of_moves.empty() || set_of_moves_supposed_to_be_empty) {
+        // This basically checks that set_of_moves_supposed_to_be_empty and set_of_moves being empty are not
         // mutually exclusive. Either both are true, or neither are. If only one are true, and error happened.
 
         throw runtime_error("set_of_moves is empty in get_to_chosen_starting_position()\n");
@@ -595,8 +545,7 @@ void play_game(vector<vector<coordinate>>& moves_reaching_starting_positions, in
 
     vector<coordinate> chosen_set_of_moves = moves_reaching_starting_positions[random_index];
 
-    remove_set_at_index(moves_reaching_starting_positions, random_index); // function will replace the bad set with the last set in the vector
-                                                                          // and then pop_back.
+    moves_reaching_starting_positions.erase(moves_reaching_starting_positions.begin() + random_index);
     t1.join();
 
     unique_ptr<position> pos = get_to_chosen_starting_position(!user_goes_first, chosen_set_of_moves, play_from_the_starting_position);
@@ -1152,7 +1101,7 @@ void find_fair_starting_sets_using_DB(vector<vector<coordinate>>& sets_of_moves)
     // positions between 4 and 7 ply, that are between a -10 and 10 evaluation
     // (according to the DB).
 
-    for (int ply = 4; ply <= 7; ply++)
+    for (int ply = 4; ply <= 7; ++ply)
     {
         vector<vector<int>> current_set_with_int_form =
         Database_Functions::get_starting_sets(ply, -10, 10, 20);
@@ -1292,7 +1241,7 @@ int main(int argc, char* argv[])
 
         vector<coordinate> empty_vec;
 
-        for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 10000; ++i)
         {
             moves_reaching_starting_positions.push_back(empty_vec);
         }
