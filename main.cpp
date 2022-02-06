@@ -86,19 +86,14 @@ unique_ptr<position> get_to_chosen_starting_position(bool does_comp_go_first, co
     // Get the Engine to play out the set_of_moves param, and only think for a reasonable amount of time
     // on the last move (since that's where the game begins).
 
-    if (set_of_moves_supposed_to_be_empty && set_of_moves.empty()) {
+    if (set_of_moves.empty() != set_of_moves_supposed_to_be_empty) {
+        throw runtime_error("set_of_moves.empty() doesn't agree with set_of_moves_supposed_to_be_empty.\n");
+    } else if (set_of_moves.empty()) {
         // So the game is supposed to begin in the empty starting position.
         unique_ptr<position> pt = position::think_on_game_position(does_comp_go_first, true,
                                                                    placeholder, false);
         return move(pt);
-    }
-
-    if (set_of_moves.empty() || set_of_moves_supposed_to_be_empty) {
-        // This basically checks that set_of_moves_supposed_to_be_empty and set_of_moves being empty are not
-        // mutually exclusive. Either both are true, or neither are. If only one are true, and error happened.
-
-        throw runtime_error("set_of_moves is empty in get_to_chosen_starting_position()\n");
-    }
+    } // Else, set_of_moves isn't empty. The rest of the function deals with this case:
 
     const double old_thinking_time = position::thinking_time;
 
