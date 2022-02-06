@@ -8,6 +8,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <random>
 
 using namespace std;
 
@@ -194,7 +195,9 @@ vector<vector<int>> Database_Functions::get_starting_sets(int ply, int low_eval_
     signal = sqlite3_exec(DB.DB_pointer, select_statement.c_str(), callback,
                           vec_ptr, &error_message);
 
-    random_shuffle(result_from_select.begin(), result_from_select.end());
+    random_device rd;
+    mt19937 g(rd());
+    shuffle(result_from_select.begin(), result_from_select.end(), g);
 
     result_from_select.resize(num_sets_wanted);
 

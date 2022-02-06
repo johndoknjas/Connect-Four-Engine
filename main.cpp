@@ -14,6 +14,7 @@
 #include <atomic>
 #include <set>
 #include <assert.h>
+#include <random>
 
 #include "position.h"
 
@@ -536,7 +537,11 @@ void play_game(vector<vector<coordinate>>& moves_reaching_starting_positions, in
 
     // Now to pick a set of moves for the comp and user to play:
 
-    int random_index = rand() % moves_reaching_starting_positions.size();
+    random_device dev;
+    mt19937 rng(dev());
+    uniform_int_distribution<mt19937::result_type> dist(1, moves_reaching_starting_positions.size());
+
+    int random_index = dist(rng) - 1;
 
     vector<coordinate> chosen_set_of_moves = moves_reaching_starting_positions[random_index];
 
@@ -1147,7 +1152,7 @@ int main(int argc, char* argv[])
         throw ("Bad number of command line arguments.");
     }
 
-    srand(time(NULL));
+    srand(time(NULL)); // Should do nothing now, since rand() is no longer used anywhere in the program.
 
     vector<vector<coordinate>> moves_reaching_starting_positions;
     // Will store sets of fair starting moves, leading to positions between
