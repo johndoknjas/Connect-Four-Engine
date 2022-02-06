@@ -859,10 +859,7 @@ coordinate position::find_best_move_for_comp()
         indices.push_back(i);
     }
 
-    // Shuffle indices vector:
-
-    auto rng = default_random_engine {};
-    shuffle(begin(indices), end(indices), rng);
+    random_shuffle(indices.begin(), indices.end());
 
     for (int index: indices) // index is the current ELEMENT in indices, and acts as an INDEX for the future_positions vector.
     {

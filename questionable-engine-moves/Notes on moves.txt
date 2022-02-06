@@ -5,3 +5,8 @@ more from odd squares). In addition, it then spent a very long time thinking (li
 
 Both of these cases involve the engine allowing its opponent to create a threat on D3, and when odd squares benefit the opponent.
 I think this has been an occasional issue with previous versions of the engine as well.
+
+3.png isn't a questionable move, but I might have played the starting position with the engine before? Not sure. The starting position
+was the position without the moves F2 and C3, and it was me to move (playing the yellow pieces).
+   - Also, even though only 80 possible starting sets of moves are picked on each run of the application, they are a random set of
+     80 on every run. So getting the same 5-ply position twice (in under 30 games) should be unlikely.

@@ -12,6 +12,8 @@
 #include <chrono>
 #include <thread>
 #include <atomic>
+#include <set>
+#include <assert.h>
 
 #include "position.h"
 
@@ -1027,6 +1029,28 @@ bool are_all_moves_valid(const vector<vector<coordinate>>& vec)
     return true;
 }
 
+vector<string> get_board_representations_of_move_sets(const vector<vector<coordinate>>& vec) {
+    vector<string> boards_representing_moves;
+    for (const vector<coordinate>& current_set_of_moves: vec) {
+        string current_board = string(42, ' ');
+        // Now I'll put a 'C' char into spots of the board that the moves in current_set_of_moves
+        // map to. Any char would work, 'C' isn't special.
+        for (int i = 0; i < current_set_of_moves.size(); ++i) {
+            current_board[position::index(current_set_of_moves[i].row, 
+                                          current_set_of_moves[i].col)] = 'C';
+        }
+        boards_representing_moves.push_back(current_board);
+    }
+    assert(boards_representing_moves.size() == vec.size());
+    return boards_representing_moves;
+}
+
+bool duplicate_sets_of_moves(const vector<vector<coordinate>>& vec) {
+    vector<string> boards_representing_moves = get_board_representations_of_move_sets(vec);
+    set<int> s(boards_representing_moves.begin(), boards_representing_moves.end());
+    return s.size() != boards_representing_moves.size();
+}
+
 void read_in_file_of_ongoing_stats(int& num_comp_wins_ongoing, int& num_user_wins_ongoing, int& num_draws_ongoing)
 {
     ifstream fin("OngoingScore.txt");
@@ -1233,6 +1257,10 @@ int main(int argc, char* argv[])
     if (!are_all_moves_valid(moves_reaching_starting_positions))
     {
         throw runtime_error("Found invalid move(s) in the moves_reaching_starting_positions vector in main()\n");
+    }
+
+    if (duplicate_sets_of_moves(moves_reaching_starting_positions)) {
+        throw runtime_error("Found duplicate starting sets of moves.");
     }
 
     char play_starting_position_input = ' ';
