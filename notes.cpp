@@ -114,6 +114,27 @@
   cases this may be difficult to do. E.g., structs in CommonClassData.h, or making the position class capitalized
   everywhere.
 
+- Could store the starting positions played against the user in a textfile or DB (as two long longs maybe?),
+  and also store the positions played in a trial of the Versus Sim. The point of this is to verify 
+  that different positions are being played.
+      - For the Versus Sim, the number of playable positions before ply 3 or 4 is fairly small though, so
+        for the test here only consider positions at 5 ply and above.
+      - Then, you could write a script that goes through the textfile / DB, outputting how many times 
+        a position at each ply (5 to 7/8) has been featured in a trial over all the simulations. 
+        The script could also verify that in each simulation, no starting position has been played twice.
+      - E.g., say the script runs on the Versus Sim, and has recorded 10 simulations so far (where
+        each simulation is something like 500 trials). If it says a position at ply 5 has been played
+        10 times, this may be reasonable, as the number of playable positions at ply 5 is somewhere in
+        the hundreds. So a position in a pool of hundreds being picked 10/(500*10) of the time is
+        somewhat reasonable.
+      - For testing the Versus Sim, make sure that a position used in a trial isn't counted for
+        both games in the trial - should only be counted once.
+        
+      - Although note that since the random_shuffle stuff has been replaced with random_device, mt19937, 
+        and shuffle(), the randomness involved in picking starting positions should be good now. So
+        there likely won't be any benefit gained from doing all this verification (although it's possible
+        of course).
+
 - See if, when in a time limited search, it's now beneficial in some new places to let the engine search, instead of
   relying on the DB. The reason for checking this out is that this new computer is a lot faster, so maybe there's some
   instances where the computer can calculate further than the DB goes, in certain positions.
