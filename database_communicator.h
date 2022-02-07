@@ -97,7 +97,6 @@ int Database_Functions::callback(void* data, int argc, char** argv, char** azCol
     vector<string> row_being_examined;
 
     for (int i = 0; i < argc; i++) {
-
         row_being_examined.push_back(argv[i]);
     }
 

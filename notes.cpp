@@ -106,6 +106,13 @@
         could continue to play around with it to see if there are any ideas to improve it.
       - It would be interesting to see which buckets in the TT get filled. E.g., are
         they mainly ones between 100,000 - 200,000, or 400,000 - 600,000, etc.
+  
+- Change the naming conventions for user defined types (classes, structs) to start with a capital letter
+  for each word, and to no longer have underscores. See https://google.github.io/styleguide/cppguide.html#Naming, 
+  under "Type Names".
+  For any naming conventions you change here in the engine, change them in the Versus Sim as well. In some
+  cases this may be difficult to do. E.g., structs in CommonClassData.h, or making the position class capitalized
+  everywhere.
 
 - See if, when in a time limited search, it's now beneficial in some new places to let the engine search, instead of
   relying on the DB. The reason for checking this out is that this new computer is a lot faster, so maybe there's some
