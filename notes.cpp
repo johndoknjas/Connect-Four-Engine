@@ -134,6 +134,29 @@
         and shuffle(), the randomness involved in picking starting positions should be good now. So
         there likely won't be any benefit gained from doing all this verification (although it's possible
         of course).
+  
+- For generating randomness, you could create a class with static functions (one that returns a random
+  number and one that randomly shuffles a vector). This class would have a static mt19937 variable that is
+  initialized once using random_device. This mt19937 variable is then used in both of the functions.
+  The benefit of doing this is that it makes the process for getting a random number/shuffle slightly simpler - 
+  just call one of the two functions (without needing to create a random_device or mt19937 instance on the spot).
+  Also, in cases where you're currently creating a random_device and mt19937 instance just to get one
+  random number/shuffle, it kind of defeats the purpose of using the mt19937. If only one number/shuffle
+  is needed, then the sequences of numbers in mt19937 isn't being used - just the one number that the
+  random_device seed maps to.
+  This is still fine though, as random_device is a good number generator. But making a static mt19937 that is
+  initialized with a random_device seed, and then used for all randomness in the run of the program from then on,
+  is the way to fully utilize the power of the mersenne twister.
+
+      - Note that if you do create this class for randomness generation, you'll somehow have to make sure the 
+        mt19937 static var is initialized before static stuff in other classes 
+        (i.e., in the position class), if said static members need to be initialized with randomness. 
+        I.e., the random_values_for_squares_with_C/U vectors are filled with random values in their 
+        initialization, so they'd be dependent on the static function for generating random numbers (which
+        in turn would be dependent on the mt19937 instance being initialized).
+      
+      - It's also okay not to do all this, and just continue generating random numbers/shuffles as you currently
+        are (it should be all working fine as it is right now).
 
 - See if, when in a time limited search, it's now beneficial in some new places to let the engine search, instead of
   relying on the DB. The reason for checking this out is that this new computer is a lot faster, so maybe there's some
