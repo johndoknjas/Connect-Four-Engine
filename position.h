@@ -3013,10 +3013,16 @@ double position::find_revised_player_evaluation(const vector<coordinate_and_doub
     {
         if ((current.square.row % 2 != 0) == did_player_move_first_in_the_game)
         {
-            // I used to only increase the square's value if it was a winning square.
-            // But now in V.35, I'm doing it for squares amplifiying a 2-in-a-row too.
+            // Increase a square's value if its odd and the player favours odd squares (or if its
+            // even and the player favours evens).
 
             current.value *= 1.75;
+
+            if (current.square.row == 3 && current.square.col == 3 
+                && squares_winning_for_player[3][3] && !squares_winning_for_opponent[4][3]) {
+                current.value *= 1.3;
+                // D3 tends to be a very powerful square that is sometimes underestimated by the engine.
+            }
         }
 
         if (current.square.row + 1 <= max_row_index && squares_winning_for_opponent[current.square.row + 1][current.square.col])

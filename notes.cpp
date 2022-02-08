@@ -1,18 +1,19 @@
-/* Version 52
+/* Version 54
 
-- Functional changes for V.52:
-    - Get rid of three lines where a coordinate object is copied. Although the compiler may now
-      have to do this itself, so maybe this doesn't actually speed things up.
-    - Get rid of future_positions_size. Also bool is_child_pruned in minimax(), and coordinate current_move. Unecessary
-      copies/assignments. And in smart_evaluation(), store the lowest squares in D as simple ints. 
-      The col values of 3 aren't used anywhere.
-    - In the first for loop of add_position_to_transposition_table, break at the end of the first if statement block.
-      Whether or not the second if statement is true should be irrelevant to the decision to break.
-    - Making the board a string instead of a 2D vector.
+- Functional change for V.54:
+    - If a player has a winning threat on the D3 square, and if they favour odd squares, then
+      multiply the value of it by 1.3.
 - Results:
-    - In the depth 9 Versus Sim match against V.51, every trial was drawn. V.52 spent on average 0.0246262 seconds thinking
-      per move, while V.51 spent 0.031674 seconds. So, V.52 is faster by a factor of around 1.286. This is a better improvement
-      than what I had expected!
+    - In a depth 9 match of 500 trials against V.53, V.54 won 455 games, lost 429 games, 
+      and drew 116 (ratio of around 1.05). V.54 did better in 17 trials and did worse in 3.
+      V.54 spent 0.0248184 seconds per move on average, while V.53 spent 0.02484 seconds on average.
+
+This change should hopefully lower the number of times the engine wrongly allows you to get a winning 
+threat on D3, when you play against it (see 1.png and 2.png in the questionable-engine-moves folder for
+examples of this).
+
+
+----------------------------------------------------------------------------
 
 
 
@@ -67,6 +68,17 @@
 
 - Profile the code, using gprof (https://www.youtube.com/watch?v=re79V7hNiBY). Then try to optimize any functions which are taking a large percentage of the time.
 
+- A few ways to build on V.54:
+    - Could experiment with adjusting the coefficient for winning D3 threats for the player favouring odds.
+    - If a normal square amplifying a 2-in-a-row (for the player favouring odds) is on D3, could also
+      increase its value, even though putting a piece on that square wouldn't lead to an immediate win. This
+      may not be beneficial, but you can experiment and see. If it turns out to not be good, you could try
+      just increasing the value if it aids a 2-in-a-row that is horizontal. Since then, putting a piece on D3
+      would lead to there being a square amplifying a 3-in-a-row on the 3rd row (i.e., an odd row).
+    - Could experiment with increasing the value of D2 and D4 threats, if the player favours even squares.
+      For D4, only do this if the opponent has no threat on D3 (similar to how in V.54, you only increased
+      the value of a D3 threat if the opponent had no D2 threat).
+
 - If a move is forced (due to the oppponent threatening a 4-in-a-row), one idea is to not count it as increasing the depth by 1 ply. This will allow the engine to go
   deeper into this subtree. However, you'd have to figure out what depth to store in the TT, when to use a duplicate in the TT with x depth, etc.
 
@@ -79,6 +91,9 @@
 - Sometimes when playing against the computer, it hangs for a long time (this doesn't happen that often though). I'm guessing this is mainly due to playing it
   on a faster computer, since occasionally it could finish the search for a fairly high depth before 1 second, and then iterate into a 1 higher depth search
   before the 1 second is up. If you want to test this, you could play against an older version of the engine on the current computer.
+
+- Make the const variables in find_individual_player_evaluation const static variables of the class instead.
+  This may give a small efficiency boost, since they won't have to be created each time that function is called.
 
 - If unordered_map is eventually used as the hash table (see below), then since the board is now a string, it could make a key for it. But zobrist hashing
   is probably more efficient (less work to do on each node) - unless you can find a way to combine zobrist hashing with unordered_map.
