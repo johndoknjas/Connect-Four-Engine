@@ -79,6 +79,27 @@ examples of this).
       For D4, only do this if the opponent has no threat on D3 (similar to how in V.54, you only increased
       the value of a D3 threat if the opponent had no D2 threat).
 
+- See 1.png in the position-images folder. There yellow is to move, and one of red's goals is to create a winning threat on F4 (an odd square, which red wants).
+  If yellow plays to G4, red could go to G5, creating the threat. If yellow does nothing, then red could go to G4 and create the threat anyway 
+  (although in this example yellow could then go to G5 and create a threat right below, but assume this isn't the case).
+
+     - The square F4 (amplifies multiple 2-in-a-rows) counts as a number of amplifying squares, it has next_squares stacked on each other: G3, G4, G5.
+     
+     - So, a spot amplifying a 2-in-a-row should be worth more if it's next_square or other_next_square is directly on top of/below the next_square/other_next_square
+       of another spot amplifying a 2-in-a-row.
+	   - In find_individual_player_evaluation, it seems something similar is being done, where the engine checks whether the next_square/other_next_square of a 2-in-a-row 
+             spot is vertically adjacent to a square that wins for the player.
+		  - The feature being proposed here is like this, but seeing if the next_square/other_next_square is vertically adjacent to another spot's next_square/other_next_square.
+                  - This would probably involve making 2D vectors (or bitstrings!) to store whether each square is the next_square/other_next_square of a 2-in-a-row amplifying spot.
+                    One vector/bitstring each for the player and opponent.
+
+- In find_individual_player_evaluation, this term is used a few times: "static_cast<double>(current_square.row + 1 + (*num_pieces_per_column)[current_square.col])".
+  This gives a square a higher value based on two factors: how low it is on the board, and how many pieces are in its column below it. In essence, the more empty squares
+  an amplifying square has under it, the lower its value. However, if some of these empty squares can never help make a 4-in-a-row for the opponent, then they're not
+  potential candidates for stopping the player from using their amplifying square. So, only count empty squares that can still potentially be used by the opponent.
+  You could even only count empty squares that are currenly an amplifying square for the opponent. If filling an empty square would only result in the opponent getting a
+  1-in-a-row or a 2-in-a-row, then it's not much of a danger to the player (at least for now).
+
 - If a move is forced (due to the oppponent threatening a 4-in-a-row), one idea is to not count it as increasing the depth by 1 ply. This will allow the engine to go
   deeper into this subtree. However, you'd have to figure out what depth to store in the TT, when to use a duplicate in the TT with x depth, etc.
 
@@ -94,6 +115,11 @@ examples of this).
 
 - Make the const variables in find_individual_player_evaluation const static variables of the class instead.
   This may give a small efficiency boost, since they won't have to be created each time that function is called.
+
+- The board_of_squares_winning_for_comp/user could be updated in each node, using data from the last_move. The last_move could cause some squares to no longer be a winning threat, and also
+  make new squares a winning threat. Then in find_individual_player_evaluation, the engine would already know which squares are winning. 
+  One benefit of this is that it wouldn't need to wait and do a second for loop through the normal squares amplifying 2-in-a-rows, since it'll already know all the squares that win.
+  However, all this may be complicated to do, and the return on investment could be low.
 
 - If unordered_map is eventually used as the hash table (see below), then since the board is now a string, it could make a key for it. But zobrist hashing
   is probably more efficient (less work to do on each node) - unless you can find a way to combine zobrist hashing with unordered_map.

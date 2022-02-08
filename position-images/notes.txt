@@ -1,0 +1,6 @@
+In 1.png, yellow is to move, and one of red's goals is to create a winning threat on F4 (an odd square, which red wants).
+If yellow plays to G4, red could go to G5, creating the threat. If yellow does nothing, then red could go to G4 and create the threat anyway 
+(although in this example yellow could then go to G5 and create a threat right below, but assume this isn't the case).
+
+So, since the square F4 (amplifies multiple 2-in-a-rows) counts as a number of amplifying squares, it has next_squares stacked on each other: G3, G4, G5.
+So, squares like F4 should generally be worth more, since the opponent can't stop them from becoming a stronger threat.
