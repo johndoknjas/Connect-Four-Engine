@@ -6,3 +6,4 @@ position.exe
 __pycache__/
 build/
 dist/
+ongoing-scores/
