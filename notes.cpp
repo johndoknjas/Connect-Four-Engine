@@ -1,16 +1,36 @@
-/* Version 54
+/* Version 55
 
-- Functional change for V.54:
-    - If a player has a winning threat on the D3 square, and if they favour odd squares, then
-      multiply the value of it by 1.3.
+- Functional change for V.55:
+    - Do not allow the calculation_depth_from_this_position field to be negative. So, if depth > depth_limit,
+      do not set it equal to depth_limit - depth; rather, just make it 0. A calculation_depth that is negative
+      doesn't make sense.
+    - The point of this is to avoid the following: if a quiescence search happens once depth = depth_limit, 
+      the nodes that follow will have a negative calculation_depth. Then, if a future node comes along with
+      that position, but reaches it "organically" (i.e., without needing any stuff with quiescence), it's
+      calculation_depth may be 0. However, it's still useful for it to get the evaluation found previously
+      in smart_evaluation, for the node that has a negative calcualtion_depth. But it wouldn't use this
+      evaluation, since that node has a lower calculation_depth than it does.
+- Expectation:
+    - My expectation was that this would just increase the engine's speed (by allowing it to avoid analyzing
+      the position and calling smart_evaluation). Curiously though, in three depth 9 matches, the speed
+      hasn't changed much, but the engine is scoring slightly better. Not really sure why this is, but it's
+      an improvement nonetheless.
+    - I suspect there could be room for further improvement here, although I don't know what to continue with.
+       - Could try figuring out where the engine is getting a different evaluation than what it would have gotten
+         anyway. The matches in the versus sim had some uneven trials, so obviously its getting some evaluations
+         that differ from V.54 somewhere.
 - Results:
-    - In a depth 9 match of 500 trials against V.53, V.54 won 455 games, lost 429 games, 
-      and drew 116 (ratio of around 1.05). V.54 did better in 17 trials and did worse in 3.
-      V.54 spent 0.0248184 seconds per move on average, while V.53 spent 0.02484 seconds on average.
-
-This change should hopefully lower the number of times the engine wrongly allows you to get a winning 
-threat on D3, when you play against it (see 1.png and 2.png in the questionable-engine-moves folder for
-examples of this).
+    - Three depth 9 matches (500 trials each) were played against V.54. Note that I was using my computer
+      at some/most points during them.
+      - First match: V.55 won 429 games, lost 419, drew 152 (ratio of around 1.02). V.55 spent
+        0.0263865 seconds/move on avg, while V.54 spent 0.0268071 seconds. Roughly a 1.6% speed increase.
+        V.55 did better in 12 trials, worse in 5.
+      - Second match: V.55 won 434 games, lost 426, drew 140 (ratio of around 1.016). V.55 spent
+        0.0252638 seconds/move on avg, while V.54 spent 0.0256519 seconds. Roughly a 1.5% speed increase.
+        V.55 did better in 10 trials, worse in 5.
+      - Third match: V.55 won 450 games, lost 439, drew 111 (ratio of around 1.022). V.55 spent
+        0.0236146 seconds/move on avg, while V.54 spent 0.0240008 seconds. Roughly a 1.6% speed increase.
+        V.55 did better in 12 trials, worse in 5.
 
 
 ----------------------------------------------------------------------------
@@ -120,6 +140,29 @@ examples of this).
   make new squares a winning threat. Then in find_individual_player_evaluation, the engine would already know which squares are winning. 
   One benefit of this is that it wouldn't need to wait and do a second for loop through the normal squares amplifying 2-in-a-rows, since it'll already know all the squares that win.
   However, all this may be complicated to do, and the return on investment could be low.
+
+- Could try improving on changes made in V.55. The V.55 stuff gave a slight improvement, but I suspect there 
+  could be room for further growth.
+    - One idea is to test by keeping track of all positions evaluated by smart_evaluation. 
+      There should never be any duplicates in this list, for the duration of an entire game. If there
+      are duplicates, then this means your idea isn't fully working as intended (since no longer having
+      a negative calculation_depth should mean a node which reached a position via a quiescence search
+      no longer has a lower calculation_depth as compared to a node which got there "organically").
+    - From a test I ran, it actually seems like V.55 only gets around 87% as many nodes as V.54 to
+      evaluate to true in if statement inside the for loop of analyze_last_move. This is curious, since my
+      change for V.55 had the intention of having the opposite effect. V.55 was supposed to catch more positions
+      that had already been evaluated by a node that reached there via quiescence.
+        - But interestingly, V.55 nevertheless seems to be very slightly faster and slightly stronger than
+          V.54.
+    - Also, a few more notes under "Expectations" from the V.55 commit.
+
+- Don’t create temp in add_position_to_transposition_table, until you’re sure you want to add it to the TT. 
+  Should help efficiency a bit?
+
+- Experiment with making C3 and E3 worth slightly more, similar to what you've done with D3 (but probably
+  don't make the engine evaluate them quite as highly as D3). However, I haven't noticed the engine
+  having an issue with under-evaluating C3 and E3 when I have played against it. So this experiment
+  may not yield any improvements.
 
 - If unordered_map is eventually used as the hash table (see below), then since the board is now a string, it could make a key for it. But zobrist hashing
   is probably more efficient (less work to do on each node) - unless you can find a way to combine zobrist hashing with unordered_map.

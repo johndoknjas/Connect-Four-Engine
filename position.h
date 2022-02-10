@@ -446,7 +446,7 @@ position::position(bool is_comp_turnP)
 
     depth = 0;
 
-    calculation_depth_from_this_position = depth_limit - depth;
+    calculation_depth_from_this_position = depth_limit >= depth ? depth_limit - depth : 0;
 
     number_of_pieces = 0;
 
@@ -499,7 +499,7 @@ position::position(const string& boardP, bool is_comp_turnP, coordinate last_mov
 
     depth = 0;
 
-    calculation_depth_from_this_position = depth_limit - depth;
+    calculation_depth_from_this_position = depth_limit >= depth ? depth_limit - depth : 0;
 
     number_of_pieces = 42 - count((*board).begin(), (*board).end(), ' ');
 
@@ -628,7 +628,7 @@ position::position(shared_ptr<string> boardP, bool is_comp_turnP,
     is_comp_turn = is_comp_turnP;
 
     depth = depthP;
-    calculation_depth_from_this_position = depth_limit - depth;
+    calculation_depth_from_this_position = depth_limit >= depth ? depth_limit - depth : 0;
     number_of_pieces = number_of_piecesP;
     last_move = last_moveP;
 
