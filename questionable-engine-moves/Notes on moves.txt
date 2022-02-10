@@ -13,3 +13,8 @@ was the position without the moves F2 and C3, and it was me to move (playing the
    - *Update*: It turns out the same set of 80 possible starting positions was chosen on each run of the program. Because of this, it's
      plausible that I could have played the same position with the engine multiple times.
    - This issue has been fixed, so playing the same position with the engine is quite unlikely now (at least within a small sample of 30 games).
+
+4.png - The computer is playing red (it wants odds). It went to C3, I went to D2, and then it went to B2 (reaching the current position). I'm pretty sure
+a better move would have been for it to go to D2 instead of C3, creating a 4-in-a-row threat on E3.
+   - The update in the notes to 1.png and 2.png (for V.54) got the engine to value D3 winning threats more, but not all third-row threats. Could add something
+     to get it to more highly value threats on C3 and E3 as well. Not sure if you want to do this for A3, B3, F3, and G3 though.
