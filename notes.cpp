@@ -154,6 +154,10 @@
       that had already been evaluated by a node that reached there via quiescence.
         - But interestingly, V.55 nevertheless seems to be very slightly faster and slightly stronger than
           V.54.
+        - Anyway, run a test where you do this test again, but also record the number of nodes reaching
+          analyze_last_move for both versions. If V.55 has like 87% as many nodes in the function, then
+          obviously it's fine if it has 87% as many nodes evaluating to true in that for loop.
+            - Although in that case, I'd imagine it would have a fairly significant speed increase over V.54?
     - Also, a few more notes under "Expectations" from the V.55 commit.
 
 - Don’t create temp in add_position_to_transposition_table, until you’re sure you want to add it to the TT. 
