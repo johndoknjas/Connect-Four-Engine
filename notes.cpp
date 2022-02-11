@@ -66,6 +66,17 @@
 
 - Profile the code, using gprof (https://www.youtube.com/watch?v=re79V7hNiBY). Then try to optimize any functions which are taking a large percentage of the time.
 
+- When checking if a duplicate of a position exists in the TT (e.g., see the add_position_to_transposition_table
+  and analyze_last_move functions), you could switch the order of the && check. So first check if the
+  is_comp_turn bools match, and only then check if the strings match.
+    - Idea is to try to get some performance gain out of short-circuit evaluation. If the positions differ,
+      then it probably won't take long for comparing strings to figure this out. However, if the positions
+      share a number of the same chars, then it would be quicker to check the bool (50% chance of it revealing
+      they're not the same position immediately).
+
+- In analyze_last_move, two for loops are used to go through the bucket. Although most buckets should be fairly
+  small, this seems a bit inefficient.
+
 - A few ways to build on V.54:
     - Could experiment with adjusting the coefficient for winning D3 threats for the player favouring odds.
     - If a normal square amplifying a 2-in-a-row (for the player favouring odds) is on D3, could also
