@@ -119,10 +119,13 @@
 
 - In find_individual_player_evaluation, this term is used a few times: "static_cast<double>(current_square.row + 1 + (*num_pieces_per_column)[current_square.col])".
   This gives a square a higher value based on two factors: how low it is on the board, and how many pieces are in its column below it. In essence, the more empty squares
-  an amplifying square has under it, the lower its value. However, if some of these empty squares can never help make a 4-in-a-row for the opponent, then they're not
+  an amplifying square has under it, the lower its value. 
+  However, if some of these empty squares can never help make a 4-in-a-row for the opponent, then they're not
   potential candidates for stopping the player from using their amplifying square. So, only count empty squares that can still potentially be used by the opponent.
   You could even only count empty squares that are currenly an amplifying square for the opponent. If filling an empty square would only result in the opponent getting a
   1-in-a-row or a 2-in-a-row, then it's not much of a danger to the player (at least for now).
+  Or, maybe have some tier list. If a squares that can never win, squares amplifying a 1-in-a-row, 2-in-a-row,
+  and 3-in-a-row. Having less enemy squares (and lower-tier ones) below a square makes its value be greater.
 
 - If a move is forced (due to the oppponent threatening a 4-in-a-row), one idea is to not count it as increasing the depth by 1 ply. This will allow the engine to go
   deeper into this subtree. However, you'd have to figure out what depth to store in the TT, when to use a duplicate in the TT with x depth, etc.
