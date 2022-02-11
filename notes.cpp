@@ -21,7 +21,8 @@
          that differ from V.54 somewhere.
 - Results:
     - Three depth 9 matches (500 trials each) were played against V.54. Note that I was using my computer
-      at some/most points during them.
+      at some/most points during them -- except for the fourth match, at which point I barely used the computer,
+      and it didn't involve any intensive stuff.
       - First match: V.55 won 429 games, lost 419, drew 152 (ratio of around 1.02). V.55 spent
         0.0263865 seconds/move on avg, while V.54 spent 0.0268071 seconds. Roughly a 1.6% speed increase.
         V.55 did better in 12 trials, worse in 5.
@@ -31,6 +32,9 @@
       - Third match: V.55 won 450 games, lost 439, drew 111 (ratio of around 1.022). V.55 spent
         0.0236146 seconds/move on avg, while V.54 spent 0.0240008 seconds. Roughly a 1.6% speed increase.
         V.55 did better in 12 trials, worse in 5.
+      - Fourth match: V.55 won 434 games, lost 418, drew 148 (ratio of around 1.0325). V.55 spent
+        0.0230026 seconds/move on avg, while V.54 spent 0.0233537 seconds. Roughly a 1.5% speed increase.
+        V.55 did better in 15 trials, worse in 5.
 
 
 ----------------------------------------------------------------------------
