@@ -1,40 +1,14 @@
-/* Version 55
+/* Version 56
 
-- Functional change for V.55:
-    - Do not allow the calculation_depth_from_this_position field to be negative. So, if depth > depth_limit,
-      do not set it equal to depth_limit - depth; rather, just make it 0. A calculation_depth that is negative
-      doesn't make sense.
-    - The point of this is to avoid the following: if a quiescence search happens once depth = depth_limit, 
-      the nodes that follow will have a negative calculation_depth. Then, if a future node comes along with
-      that position, but reaches it "organically" (i.e., without needing any stuff with quiescence), it's
-      calculation_depth may be 0. However, it's still useful for it to get the evaluation found previously
-      in smart_evaluation, for the node that has a negative calcualtion_depth. But it wouldn't use this
-      evaluation, since that node has a lower calculation_depth than it does.
+- Functional change for V.56:
+    - Make the add_position_to_transposition_table function faster.
 - Expectation:
-    - My expectation was that this would just increase the engine's speed (by allowing it to avoid analyzing
-      the position and calling smart_evaluation). Curiously though, in three depth 9 matches, the speed
-      hasn't changed much, but the engine is scoring slightly better. Not really sure why this is, but it's
-      an improvement nonetheless.
-    - I suspect there could be room for further improvement here, although I don't know what to continue with.
-       - Could try figuring out where the engine is getting a different evaluation than what it would have gotten
-         anyway. The matches in the versus sim had some uneven trials, so obviously its getting some evaluations
-         that differ from V.54 somewhere.
+    - My expectation is that this will give a small to significant performance increase, as this function
+      is called a lot, and also involves copying the board's contents.
 - Results:
-    - Three depth 9 matches (500 trials each) were played against V.54. Note that I was using my computer
-      at some/most points during them -- except for the fourth match, at which point I barely used the computer,
-      and it didn't involve any intensive stuff.
-      - First match: V.55 won 429 games, lost 419, drew 152 (ratio of around 1.02). V.55 spent
-        0.0263865 seconds/move on avg, while V.54 spent 0.0268071 seconds. Roughly a 1.6% speed increase.
-        V.55 did better in 12 trials, worse in 5.
-      - Second match: V.55 won 434 games, lost 426, drew 140 (ratio of around 1.016). V.55 spent
-        0.0252638 seconds/move on avg, while V.54 spent 0.0256519 seconds. Roughly a 1.5% speed increase.
-        V.55 did better in 10 trials, worse in 5.
-      - Third match: V.55 won 450 games, lost 439, drew 111 (ratio of around 1.022). V.55 spent
-        0.0236146 seconds/move on avg, while V.54 spent 0.0240008 seconds. Roughly a 1.6% speed increase.
-        V.55 did better in 12 trials, worse in 5.
-      - Fourth match: V.55 won 434 games, lost 418, drew 148 (ratio of around 1.0325). V.55 spent
-        0.0230026 seconds/move on avg, while V.54 spent 0.0233537 seconds. Roughly a 1.5% speed increase.
-        V.55 did better in 15 trials, worse in 5.
+    - V.56 spent 0.0265462 seconds/move on avg, while V.55 spent 0.0275324 seconds. So roughly a 
+      3.7% speed increase.
+      All the trials ended in ties, which was as expected.
 
 
 ----------------------------------------------------------------------------
