@@ -214,6 +214,14 @@
         and shuffle(), the randomness involved in picking starting positions should be good now. So
         there likely won't be any benefit gained from doing all this verification (although it's possible
         of course).
+          - Also, even if the computer were still only playing the same 80 positions against the user over all the runs,
+            this isn't that bad in the first place.
+          - In the Versus Sim, the same positions on each run definitely isn't ideal, although it's still a decent test of the
+            engines' strength.
+              - And in multiple depth_limit trials, the ratio of scores between the same engines has been different,
+                so clearly they're not playing identical sets of positions on each run. 
+              - Some positions with only a few pieces are being featured on many runs, but this is expected behaviour.
+                  - And for these positions, the trial they're being played in (out of the 500) can vary from run to run.
   
 - For generating randomness, you could create a class with static functions (one that returns a random
   number and one that randomly shuffles a vector). This class would have a static mt19937 variable that is
