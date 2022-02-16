@@ -1,19 +1,52 @@
-/* Version 56
+/* Version 57
 
-- Functional change for V.56:
-    - Make the add_position_to_transposition_table function faster.
-- Expectation:
-    - My expectation is that this will give a small to significant performance increase, as this function
-      is called a lot, and also involves copying the board's contents.
+- Functional changes for V.57:
+    - The find_critical_moves_in_amplifying_vector function returns a bool that says whether
+      any critical square(s) were found for the player whose turn it is.
+    - If the above is true, then a winning evaluation is assigned in analyze_last_move, the info is
+      added to the TT, and control returns.
+    - An int parameter is sent to the minimax function, telling it how many of the possible_moves do not
+      lose on the spot. For the moves that do lose on the spot, the minimax function technically still
+      creates a position object for them (this is useful for still putting an object in the future_positions
+      vector, which is important for the possible_moves_sorted vector of the object that'll be put into the TT),
+      but its search doesn't go past the root node.
+    - The rearrange_possible_moves function is only called if the critical_moves vector is non-empty.
 - Results:
-    - V.56 spent 0.0265462 seconds/move on avg, while V.55 spent 0.0275324 seconds. So roughly a 
-      3.7% speed increase.
-      All the trials ended in ties, which was as expected.
+    - V.57 spent 0.0186373 per move on average, while V.56 spent 0.0228314 seconds. Roughly a 22.5% speed
+      increase.
+      All the trials ended in ties, which was as expected (431 games won each, 138 draws).
+    - In a previous match, with code very similar to V.57, all the trials ended in ties
+      (433 games won each, 134 draws), and the speed increase was 22.2%. So lends more data to the above result.
+    - Both of these matches were fairly similar though, both in the time the engines took on average, and
+      the final match scores. The Versus Sim appears to be sorting the positions randomly though, but this
+      would be something to verify with the Sim in the future. If it turns out it does have a bug, then you
+      can easily run simulations again for all past versions (since like V.50 or something). It would still
+      be likely that each successive version was stronger, it's just that the simulations used to test
+      them weren't completely ideal.
 
 
 ----------------------------------------------------------------------------
 
 
+
+-	Somehow, some squares amplifying 3-in-a-rows (and some 2-in-a-rows too I think) aren’t recorded. 
+  This seems to be the case if such a threat is created in the root node. 
+  So, maybe something to do with how the amplifying vectors are updated in main.cpp of the versus sim?
+    o	It may be that this is more of an issue for the comp, since it seemed like less amplifying squares for 
+      the comp were being printed out. Although this may just be a coincidence, not sure.
+    o	See the critical-moves-idea branch (in the Versus Sim) for some test code I wrote for debugging this:
+      -	Commit 0159ab1b57dfd72701dd8abb51b4e99efa7236c2 (my attempt to return out of analyze_last_move early 
+        in some cases, which relied on the assumption that amplifying vectors would always store 3-in-a-rows).
+      -	Commit 753cd6f349dc6726221b37a6d3e1541799742d61 (my attempts at debugging said improvement - involved
+        printing out boards and amplifying vectors).
+      -	When depth == impossible_depth, this should mean that the side to move is winning, since the 
+        opponent failed to stop a critical move they had in the previous node. So, did_someone_win() 
+        should always evaluate to false. But somehow it is sometimes evaluating to true 
+        (at some point in every game), where ‘C’ is winning and ‘U’ has a 3-in-a-row 
+        (and was on the verge of winning with a critical_move).
+    
+    - Note that if you fix this issue, then in analyze_last_move, you won't need to call the
+      did_someone_win() function in the if statement with condition (depth == impossible_depth) anymore.
 
 - Memory seems to be accumulating somehow. In the versus sim (depth = 9), V.51 and V.52 slowly
   use more and more memory; not enough to cause a crash before 500 trials are up (only like 1-2 GBs
@@ -24,6 +57,30 @@
       class doesn't seem to be increasing in size in any way. Maybe try running valgrind? Not
       sure if that would help here.
     - Started investigating this stuff in the branch "debugging-accumulated-memory-usage".
+
+- Profile the code, using gprof (https://www.youtube.com/watch?v=re79V7hNiBY). Then try to optimize any functions which are taking a large percentage of the time.
+
+-	No need to find the next_square and other_next_square for the squares in 
+  squares_amplifying_3_in_a_row for comp and user.
+
+-	In the clean amplifying vectors function, remove any duplicate amplifying squares.
+
+-	See if there’s some way to use the critical moves vector from a parent node to avoid 
+  having to recalculate everything again for a child’s critical_moves vector.
+
+-	Tidy up amplifying vectors if you’re ever running through them anyway 
+  (since you can just check if a square is still empty in the board as you use it).
+    - Note that I don't mean to call the clean_amplifying vectors function everywhere though, it should
+      only be called in the second constructor.
+    - You'd instead do the cleaning yourself in an amplifying vector, as you're running through it for
+      some other primary reason.
+
+-	For a square amplifying a 2-in-a-row, if it only has one next_square/other_next_square, 
+  don’t count it if this overlaps with another 2-in-a-row square and next_square/other_next_square.
+    o	If the first 2-in-a-row has both a next_square and other_next_square, still don’t count it 
+      if all three (current square, next, and other_next) all overlap with other 2-in-a-row stuff.
+    o	Basically, if this first 2-in-a-row’s squares were filled, and you could take the 2-in-a-row 
+      away and the player’s position would still be as strong, then don’t count the 2-in-a-row.
 
 /* Ways to build on Zobrist Hashing from Version 51:
   - Although the zobrist hashing increased the speed by 5%, there may be potential for more. E.g., the comment and answer
@@ -63,8 +120,6 @@
     a square would win for one of the players. Also, for unsigned long longs (64 bits), passing by value should (probably) be at least
     as efficient as passing by reference (which would likely be implementing using a pointer that is 64 bits). 
     Passing by reference has some indirection involved in accessing the value.
-
-- Profile the code, using gprof (https://www.youtube.com/watch?v=re79V7hNiBY). Then try to optimize any functions which are taking a large percentage of the time.
 
 - When checking if a duplicate of a position exists in the TT (e.g., see the add_position_to_transposition_table
   and analyze_last_move functions), you could switch the order of the && check. So first check if the

@@ -148,8 +148,10 @@ public:
 
     void print_amplifying_vectors(); // prints the contents of all 4 amplifying vectors to the screen (this is just for testing!)
 
-    void find_critical_moves(vector<coordinate>& critical_moves); // Fills vector with moves that can be played now, which
+    bool find_critical_moves(vector<coordinate>& critical_moves); // Fills vector with moves that can be played now, which
                                                                   // lead to a 4-in-a-row.
+                                                                  // Returns true if the player to move now is winning - 
+                                                                  // i.e., if any critical moves exist for them.
 
     void find_critical_moves_in_amplifying_vector(vector<coordinate>& critical_moves,
                                                   const shared_ptr<vector<treasure_spot>> amplifying_vector,
@@ -242,6 +244,9 @@ public:
 
     static vector<vector<bool>> board_of_squares_winning_for_comp; // 2-D board that stores true for a square if the comp wins after filling it in.
     static vector<vector<bool>> board_of_squares_winning_for_user; // 2-D board that stores true for a square if the user wins after filling it in.
+    static const int impossible_depth; // This is sent to the third constructor as the depth parameter when
+                                       // the position is not one I want to consider in analyze_last_move(), due
+                                       // to the fact that the player to move can win on the spot.
 
     // Public static methods:
 
@@ -349,7 +354,7 @@ private:
                                                                      // "analyze_last_move()".
     void add_to_appropriate_amplifying_vector(int num_pieces_in_a_row, const treasure_spot& empty_square);
     // function adds empty_square to one of the four amplifying vectors, depending on num_pieces_in_a_row and whose turn it is.
-    void minimax(); // Employs the minimax algorithm...
+    void minimax(int num_possible_moves_to_consider); // Employs the minimax algorithm...
                     // fills the future_positions vector with all positions one move ahead.
                     // eventually gives the evaluation attribute a value.
     double find_revised_player_evaluation(const vector<coordinate_and_double>& info_for_player_amplifying_squares,
@@ -414,6 +419,8 @@ vector<treasure_spot> position::empty_amplifying_vector;
 
 vector<vector<bool>> position::board_of_squares_winning_for_comp = create_board_of_bools();
 vector<vector<bool>> position::board_of_squares_winning_for_user = create_board_of_bools();
+
+const int position::impossible_depth = 100;
 
 // CONSTRUCTORS:
 
@@ -484,7 +491,7 @@ position::position(bool is_comp_turnP)
 
     // So, call minimax() now:
 
-    minimax();
+    minimax(possible_moves.size());
 }
 
 position::position(const string& boardP, bool is_comp_turnP, coordinate last_moveP,
@@ -674,7 +681,7 @@ position::position(shared_ptr<string> boardP, bool is_comp_turnP,
     is_a_pruned_branch = false;
     got_value_from_pruned_child = false;
 
-    analyze_last_move(); // will analyze the last_move, and then call minimax() if the game isn't over.
+    analyze_last_move();
 
     (*board)[index(last_move.row, last_move.col)] = ' '; // since board is a pointer. 
     // This is repairing board for the parent node to use it.
@@ -768,7 +775,10 @@ coordinate position::find_best_move_for_comp()
 
     if (future_positions.empty())
     {
-        // This position must have a forced win, but it got its evaluation immediately from the TT and doesn't have a future positions vector.
+        // This position must have a forced win, but it may have gotten its evaluation immediately from the TT 
+        // and doesn't have a future positions vector. Or, a critical move was found for the player whose 
+        // turn it is right now, which would have also resulted in this node getting a winning evaluation
+        // but no future_positions vector.
 
         // So, create a new search right here with depth_limit = 1 or 2. The TT will be used in the search process implicitly, as it
         // would normally.
@@ -843,7 +853,7 @@ coordinate position::find_best_move_for_comp()
 
     // Randomly pick a move with the same evaluation as the calling position object.
 
-    vector <int> indices; // will store all the possible indices of future_positions vector.
+    vector<int> indices; // will store all the possible indices of future_positions vector.
 
     for (int i = 0; i < future_positions.size(); i++)
     {
@@ -1023,8 +1033,7 @@ void position::rearrange_possible_moves(const vector<coordinate>& front_moves)
 
     possible_moves = replacement;
 
-    if (possible_moves.size() != start_size)
-    {
+    if (possible_moves.size() != start_size) {
         throw runtime_error("possible_moves.size changes.\n");
     }
 }
@@ -1201,7 +1210,7 @@ void position::print_amplifying_vectors()
     }
 }
 
-void position::find_critical_moves(vector<coordinate>& critical_moves)
+bool position::find_critical_moves(vector<coordinate>& critical_moves)
 {
     // If it is the comp's turn in this position, I'll want to first add any moves that win for the comp to the
     // critical_moves vector first. This is because the critical_moves will be put at the front of possible_moves vector,
@@ -1210,7 +1219,13 @@ void position::find_critical_moves(vector<coordinate>& critical_moves)
     if (is_comp_turn)
     {
         find_critical_moves_in_amplifying_vector(critical_moves, squares_amplifying_comp_2, false, 'C');
+        if (!critical_moves.empty()) {
+            return true;
+        }
         find_critical_moves_in_amplifying_vector(critical_moves, squares_amplifying_comp_3, true, 'C');
+        if (!critical_moves.empty()) {
+            return true;
+        }
         find_critical_moves_in_amplifying_vector(critical_moves, squares_amplifying_user_2, false, 'U');
         find_critical_moves_in_amplifying_vector(critical_moves, squares_amplifying_user_3, true, 'U');
     }
@@ -1218,12 +1233,19 @@ void position::find_critical_moves(vector<coordinate>& critical_moves)
     else // user's turn, so look at moves that win for the user first...
     {
         find_critical_moves_in_amplifying_vector(critical_moves, squares_amplifying_user_2, false, 'U');
+        if (!critical_moves.empty()) {
+            return true;
+        }
         find_critical_moves_in_amplifying_vector(critical_moves, squares_amplifying_user_3, true, 'U');
+        if (!critical_moves.empty()) {
+            return true;
+        }
         find_critical_moves_in_amplifying_vector(critical_moves, squares_amplifying_comp_2, false, 'C');
         find_critical_moves_in_amplifying_vector(critical_moves, squares_amplifying_comp_3, true, 'C');
     }
 
     remove_duplicates(critical_moves);
+    return false;
 }
 
 void position::find_critical_moves_in_amplifying_vector(vector<coordinate>& critical_moves,
@@ -2179,10 +2201,38 @@ void position::analyze_last_move()
         {
             evaluation = current.evaluation;
 
-          //  counter_of_TT_usefulness ++;
+            // counter_of_TT_usefulness ++;
 
             return; // All done for this position entirely!
         }
+    }
+
+    if (depth == impossible_depth) {
+        /* 
+        If depth == impossible_depth, then this means that the side whose turn it is has a 3-in-a-row
+        that can be filled right now. However, the opponent may have won just now with last_move.
+        I had assumed this would never happen, but it turns out that some squares amplifying a 3-in-a-row
+        will not be adding to an amplifying vector, if this 3-in-a-row threat was created in the root node.
+        This means my above assumption isn't the case.
+        For future work, debugging why this is the case is definitely an area ripe for improvement.
+        It may just be an issue with how the Versus Sim updates the amplifying vectors in main.cpp, but
+        it could also be inherent to code the in position class - not sure.
+        If you do fix this, then in the ternary below, calling did_someone_win() should be unnecessary.
+        All that decides who gets the winning eval is whose turn it is to move.
+
+        Anyway, for now there are four possible cases:
+            It's the comp's turn and did_someone_win() = true. This means the user has won.
+            It's the comp's turn and did_someone_win() = false. This means the user hasn't won, which
+            will allow the comp to win on the spot now.
+            It's the user's turn and did_someone_win() = true. So, the comp has won.
+            It's the user's turn and did_someone_win() = false. Therefore, the user can win on the spot.
+
+        These four conditions can be dealt with on one line:
+        */
+        evaluation = (is_comp_turn != did_someone_win()) ? INT_MAX : INT_MIN;
+
+        add_position_to_transposition_table(true);
+        return;
     }
 
     // See how many pieces are in a row horizontally due to last_move:
@@ -2241,24 +2291,18 @@ void position::analyze_last_move()
 
     vector<coordinate> critical_moves; // stores moves (for either side) that make a 4-in-a-row, that can be played now.
 
-    find_critical_moves(critical_moves); // passed by reference.
+    if (find_critical_moves(critical_moves)) { 
+        // critical moves passed by reference.
+        evaluation = is_comp_turn ? INT_MAX : INT_MIN;
+        add_position_to_transposition_table(true);
+        return;
+    }
 
-    if (depth >= depth_limit && critical_moves.size() == 0) // Quiescent state reached at depth_limit (or beyond).
+    if (depth >= depth_limit && critical_moves.empty()) // Quiescent state reached at depth_limit (or beyond).
     {
         // So, smart_evaluation() is ready to evaluate the position:
-
         smart_evaluation(); // gives the evaluation attribute a value.
-
-        if (evaluation == INT_MAX || evaluation == INT_MIN)
-        {
-            add_position_to_transposition_table(true);
-        }
-
-        else
-        {
-            add_position_to_transposition_table(false);
-        }
-
+        add_position_to_transposition_table(evaluation == INT_MAX || evaluation == INT_MIN);
         return;
     }
 
@@ -2266,27 +2310,22 @@ void position::analyze_last_move()
     // If so, set this calling object's possible_moves vector to equal it.
     // Note that this is where nearly all the speed of the TT comes to fruition!
 
-    bool found_earlier_duplicate_in_TT = false;
-
     for (const position_info_for_TT_v2& current: transposition_table[hash_value_of_position])
     {
         if (current.board == *board && current.is_comp_turn == is_comp_turn && !current.possible_moves_sorted.empty())
         {
             possible_moves = current.possible_moves_sorted;
-
-            found_earlier_duplicate_in_TT = true;
-
-            break;
+            minimax(possible_moves.size());
+            return;
         }
     }
-
-    if (!found_earlier_duplicate_in_TT)
-    {
-        rearrange_possible_moves(critical_moves); // Function puts the critical_moves in possible_moves at the front
-                                                  // of possible_moves.
+    // If control reaches this point, then no duplicate was found in the TT.
+    if (!critical_moves.empty()) {
+        rearrange_possible_moves(critical_moves);
+        minimax(critical_moves.size());
+    } else {
+        minimax(possible_moves.size());
     }
-
-    minimax();
 }
 
 void position::analyze_horizontal_perspective_of_last_move()
@@ -2818,14 +2857,14 @@ void position::add_to_appropriate_amplifying_vector(int num_pieces_in_a_row, con
     }
 }
 
-void position::minimax()
+void position::minimax(int num_possible_moves_to_consider)
 {
     // Here's where all the magic happens.
 
     // The game is not over, so look at all positions one move ahead.
     // Then, set evaluation accordingly, using the minimax algorithm...
 
-    for (int i = 0; i < possible_moves.size(); i++) // running through the possible_moves vector to play out each move.
+    for (int i = 0; i < possible_moves.size(); ++i) // running through the possible_moves vector to play out each move.
     {
         if (stop_signal)
         {
@@ -2834,7 +2873,14 @@ void position::minimax()
 
         // Now to make a new position object, with this updated board that's one move ahead.
 
-        unique_ptr<position> pt = make_unique<position>(board, !is_comp_turn, depth + 1,
+        // The ternary below sends an impossible value for the depth (100) if the move is not one I want to 
+        // consider. If i isn't smaller than num_possible_moves_to_consider, then the move will 
+        // lose immediately to the opponent on the next move. 
+        // The reason I'm still creating an object for it is to ensure the future_positions vector
+        // includes it, so that when adding it to the TT, the possible_moves_sorted vector won't be
+        // incomplete (this avoids messing up another node that using the TT).
+        unique_ptr<position> pt = make_unique<position>(board, !is_comp_turn, 
+                                                        (i < num_possible_moves_to_consider ? depth + 1 : impossible_depth),
                                                         number_of_pieces + 1, possible_moves[i],
                                                         possible_moves, i, alpha, beta,
                                                         squares_amplifying_comp_2, squares_amplifying_comp_3,
