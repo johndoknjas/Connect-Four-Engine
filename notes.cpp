@@ -56,6 +56,18 @@
 
 - Consider storing a node's critical_moves vector in the TT, since this could save time by not having to
   call the find_critical_moves function for duplicate nodes.
+      - Or, you could just store the number of critical moves, and also whether the player whose turn it is
+        has any critical moves.
+      - This is all the info you really need for the stuff you do in analyze_last_move. For using the actual
+        critical_moves themselves, they'd already be stored at the front of the possible_moves vector
+        for the TT duplicate.
+      - You could then do similar behavior to what's seen at the end of analyze_last_move (with the minimax
+        calls). Note that in the case of there being 1 critical move, if you've found a duplicate in the TT
+        with a non-empty possible_moves_sorted vector, then it should already have the critical move at the
+        front.
+      - Earlier in analyze_last_move, the find_critical_moves function is called. Here, you could just
+        loop through the TT earlier, and get the info you need (e.g., whether the player whose turn it is
+        has any critical moves).
 
 - For the possible_moves vector stored in a TT for a node, indicate somehow how many of the moves should
   be seriously considered (i.e., how many of the first i elements in possible_moves do not lose on the
