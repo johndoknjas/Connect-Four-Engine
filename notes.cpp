@@ -1,28 +1,18 @@
-/* Version 57
+/* Version 58
 
-- Functional changes for V.57:
-    - The find_critical_moves_in_amplifying_vector function returns a bool that says whether
-      any critical square(s) were found for the player whose turn it is.
-    - If the above is true, then a winning evaluation is assigned in analyze_last_move, the info is
-      added to the TT, and control returns.
-    - An int parameter is sent to the minimax function, telling it how many of the possible_moves do not
-      lose on the spot. For the moves that do lose on the spot, the minimax function technically still
-      creates a position object for them (this is useful for still putting an object in the future_positions
-      vector, which is important for the possible_moves_sorted vector of the object that'll be put into the TT),
-      but its search doesn't go past the root node.
-    - The rearrange_possible_moves function is only called if the critical_moves vector is non-empty.
+- Functional change for V.58:
+    - This version builds on V.57 with a few small tweaks in the analyze_last_move function.
+    - If there is only 1 critical move, then don't call the rearrange_possible_moves function;
+      instead, just shift this move into the first position in possible_moves.
+    - If there are > 1 critical moves, don't put any at the front of possible_moves, since blocking
+      one of the opponent's winning threats is futile (they have at least one other winning threat).
+      Instead, possible_moves is left as is, and in the minimax function 0 moves will be considered
+      seriously. They will all have a depth 0 search, and if the player gets lucky and wins on the spot,
+      then they're winning. Otherwise, the opponent will be winning.
+    - Note that the rearrange_possible_moves function has now been deleted.
 - Results:
-    - V.57 spent 0.0186373 per move on average, while V.56 spent 0.0228314 seconds. Roughly a 22.5% speed
-      increase.
-      All the trials ended in ties, which was as expected (431 games won each, 138 draws).
-    - In a previous match, with code very similar to V.57, all the trials ended in ties
-      (433 games won each, 134 draws), and the speed increase was 22.2%. So lends more data to the above result.
-    - Both of these matches were fairly similar though, both in the time the engines took on average, and
-      the final match scores. The Versus Sim appears to be sorting the positions randomly though, but this
-      would be something to verify with the Sim in the future. If it turns out it does have a bug, then you
-      can easily run simulations again for all past versions (since like V.50 or something). It would still
-      be likely that each successive version was stronger, it's just that the simulations used to test
-      them weren't completely ideal.
+    - V.58 spent 0.0177904 seconds/move on average, while V.57 spent 0.0181811 seconds. Roughly
+      a 2.2% speed increase. All the trials were tied (each engine won 428 games total, drew 144).
 
 
 ----------------------------------------------------------------------------
