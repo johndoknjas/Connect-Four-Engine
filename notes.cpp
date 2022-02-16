@@ -48,6 +48,10 @@
     - Note that if you fix this issue, then in analyze_last_move, you won't need to call the
       did_someone_win() function in the if statement with condition (depth == impossible_depth) anymore.
 
+    - Also, I'm pretty sure this was an issue in previous versions, since if the early
+      depth == impossible_depth check in analyze_last_move was causing this issue, the depth match
+      between V.57 and V.56 would not have been exactly even in its score.
+
 - Memory seems to be accumulating somehow. In the versus sim (depth = 9), V.51 and V.52 slowly
   use more and more memory; not enough to cause a crash before 500 trials are up (only like 1-2 GBs
   are used), but it's still odd. Also, when I play against the engine and spend a while making my
@@ -59,6 +63,17 @@
     - Started investigating this stuff in the branch "debugging-accumulated-memory-usage".
 
 - Profile the code, using gprof (https://www.youtube.com/watch?v=re79V7hNiBY). Then try to optimize any functions which are taking a large percentage of the time.
+
+- Consider storing a node's critical_moves vector in the TT, since this could save time by not having to
+  call the find_critical_moves function for duplicate nodes.
+
+- For the possible_moves vector stored in a TT for a node, indicate somehow how many of the moves should
+  be seriously considered (i.e., how many of the first i elements in possible_moves do not lose on the
+  spot to the opponent by allowing them to play one of their critical moves).
+    - If you do the above idea of storing critical_moves in the TT, then you may not need to store anything
+      separate to indicate how many of the first i possible_moves should be seriously considered. Just get
+      the size of critical_moves in the TT, and the duplicate node will then know to only go through the first
+      i = critical_moves.size() elements in the possible_moves vector it gets from the TT node.
 
 -	No need to find the next_square and other_next_square for the squares in 
   squares_amplifying_3_in_a_row for comp and user.
