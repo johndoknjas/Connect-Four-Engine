@@ -13,3 +13,8 @@ was the position without the moves F2 and C3, and it was me to move (playing the
    - *Update*: It turns out the same set of 80 possible starting positions was chosen on each run of the program. Because of this, it's
      plausible that I could have played the same position with the engine multiple times.
    - This issue has been fixed, so playing the same position with the engine is quite unlikely now (at least within a small sample of 30 games).
+
+In 4.png, the engine was playing yellow, and it just moved to C4, allowing me to play A2 on the next move (creating a 3-in-a-row threat on D2 which eventually
+won the game). I'm assuming the computer didn't go to A2 itself since after I play to D1, I'll get an even threat after one of D2 or B3 on my next move. However,
+the computer should evaluate D2 higher, since it's in the centre file and low on the board.
+	- Curiously, soon after I played A2, the computer starting moving instantly, which means at that point it knew it was lost.
