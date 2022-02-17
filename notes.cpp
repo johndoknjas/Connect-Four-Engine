@@ -18,6 +18,21 @@
 ----------------------------------------------------------------------------
 
 
+- There seems to be some issue with a change in either V.58 or V.57. The ongoing score for me
+  against the engine (versions 52 to 56) was 105 comp wins, 10 wins for me, 7 draws (8.037 ratio - averages
+  somewhere in the 7s usually). But now after some games against V.58, the score is 12 comp wins, 5 wins for me,
+  1 draw (ratio of 2.27). Unless this is a major coincidence, something is wrong. And in two of my wins,
+  it was because the computer allowed me to get a 3-in-a-row D2 threat (when I favoured evens).
+    - Run a Versus Sim for V.58 against V.56, but with a time limit.
+    - If V.58 gets a better score, then there may be something wrong with main.cpp for the Connect Four
+      engine here.
+    - If V.58 does worse though, then for some reason it would do worse in a time limit match, even though
+      it's just faster in a depth limit match.
+    
+    - This Versus Sim is running now, should be done/almost done by tomorrow.
+    
+    - You could test playing against V.57 yourself (instead of V.58), and if it gets a high ratio,
+      then maybe just revert to V.57 and scrap V.58.
 
 -	Somehow, some squares amplifying 3-in-a-rows (and some 2-in-a-rows too I think) aren’t recorded. 
   This seems to be the case if such a threat is created in the root node. 
