@@ -100,13 +100,6 @@
 -	See if there’s some way to use the critical moves vector from a parent node to avoid 
   having to recalculate everything again for a child’s critical_moves vector.
 
--	Tidy up amplifying vectors if you’re ever running through them anyway 
-  (since you can just check if a square is still empty in the board as you use it).
-    - Note that I don't mean to call the clean_amplifying vectors function everywhere though, it should
-      only be called in the second constructor.
-    - You'd instead do the cleaning yourself in an amplifying vector, as you're running through it for
-      some other primary reason.
-
 -	For a square amplifying a 2-in-a-row, if it only has one next_square/other_next_square, 
   don’t count it if this overlaps with another 2-in-a-row square and next_square/other_next_square.
     o	If the first 2-in-a-row has both a next_square and other_next_square, still don’t count it 
