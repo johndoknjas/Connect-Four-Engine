@@ -124,6 +124,9 @@ public:
     void set_is_comp_turn (bool turnP);
     void set_depth(int depthP);
     void clean_up_amplifying_vectors(); // removes all elements in the 4 amplifying vectors that are no longer ' ' chars.
+    void rearrange_possible_moves(const vector<coordinate>& front_moves); // puts the moves in front_moves at the front of
+                                                                          // the possible_moves vector of the calling object.
+                                                                          // All these moves should already be in possible_moves.
 
     void add_position_to_transposition_table(bool is_evaluation_indisputable);
     // Adds this position's board (the key) and evaluation to the appropriate index in
@@ -850,7 +853,7 @@ coordinate position::find_best_move_for_comp()
 
     // Randomly pick a move with the same evaluation as the calling position object.
 
-    vector<int> indices; // will store all the possible indices of future_positions vector.
+    vector <int> indices; // will store all the possible indices of future_positions vector.
 
     for (int i = 0; i < future_positions.size(); i++)
     {
@@ -1012,6 +1015,27 @@ void position::clean_up_amplifying_vectors()
     remove_treasure_spot_objects_from_vector(squares_amplifying_comp_3);
     remove_treasure_spot_objects_from_vector(squares_amplifying_user_2);
     remove_treasure_spot_objects_from_vector(squares_amplifying_user_3);
+}
+
+void position::rearrange_possible_moves(const vector<coordinate>& front_moves)
+{
+    int start_size = possible_moves.size();
+
+    vector<coordinate> replacement = front_moves; // possible_moves will be set to this vector at the end of the function.
+
+    for (const coordinate& temp: possible_moves)
+    {
+        if (!in_coordinate_vector(front_moves, temp)) // not in front_moves, so add to replacement:
+        {
+            replacement.push_back(temp);
+        }
+    }
+
+    possible_moves = replacement;
+
+    if (possible_moves.size() != start_size) {
+        throw runtime_error("possible_moves.size changes.\n");
+    }
 }
 
 void position::add_position_to_transposition_table(bool is_evaluation_indisputable)
@@ -2183,34 +2207,6 @@ void position::analyze_last_move()
         }
     }
 
-    if (depth == impossible_depth) {
-        /* 
-        If depth == impossible_depth, then this means that the side whose turn it is has a 3-in-a-row
-        that can be filled right now. However, the opponent may have won just now with last_move.
-        I had assumed this would never happen, but it turns out that some squares amplifying a 3-in-a-row
-        will not be adding to an amplifying vector, if this 3-in-a-row threat was created in the root node.
-        This means my above assumption isn't the case.
-        For future work, debugging why this is the case is definitely an area ripe for improvement.
-        It may just be an issue with how the Versus Sim updates the amplifying vectors in main.cpp, but
-        it could also be inherent to code the in position class - not sure.
-        If you do fix this, then in the ternary below, calling did_someone_win() should be unnecessary.
-        All that decides who gets the winning eval is whose turn it is to move.
-
-        Anyway, for now there are four possible cases:
-            It's the comp's turn and did_someone_win() = true. This means the user has won.
-            It's the comp's turn and did_someone_win() = false. This means the user hasn't won, which
-            will allow the comp to win on the spot now.
-            It's the user's turn and did_someone_win() = true. So, the comp has won.
-            It's the user's turn and did_someone_win() = false. Therefore, the user can win on the spot.
-
-        These four conditions can be dealt with on one line:
-        */
-        evaluation = (is_comp_turn != did_someone_win()) ? INT_MAX : INT_MIN;
-
-        add_position_to_transposition_table(true);
-        return;
-    }
-
     // See how many pieces are in a row horizontally due to last_move:
 
     analyze_horizontal_perspective_of_last_move(); // sets evaluation to INT_MAX/INT_MIN if someone won,
@@ -2267,8 +2263,15 @@ void position::analyze_last_move()
 
     vector<coordinate> critical_moves; // stores moves (for either side) that make a 4-in-a-row, that can be played now.
 
-    if (find_critical_moves(critical_moves)) { 
+    if (depth == impossible_depth || find_critical_moves(critical_moves)) { 
         // critical moves passed by reference.
+        // Checking depth == impossible_depth hopes for a lucky short-circuit evaluation. If it's true,
+        // then there's a forced win on the spot for the player to move, and getting the critical_moves
+        // isn't needed.
+        // If depth == impossible_depth is false, then it's possible (although unlikely) that
+        // find_critical_moves could return true. However, the main reason it then gets called is to
+        // fill the critical_moves_vector, since this if statement will probably evaluate to false.
+
         evaluation = is_comp_turn ? INT_MAX : INT_MIN;
         add_position_to_transposition_table(true);
         return;
@@ -2297,22 +2300,8 @@ void position::analyze_last_move()
     }
     // If control reaches this point, then no duplicate was found in the TT.
     if (!critical_moves.empty()) {
-        // If there is only 1 critical move for the opponent, then I want to only seriously consider
-        // that one.
-        // If there are multiple critical moves for the opponent, then there's no way to stop
-        // them from getting a forced win.
-        if (critical_moves.size() == 1) {
-            // I want to put this move at the start of possible_moves.
-            // First, erase it from its current position, and then insert at the beginning.
-            possible_moves.erase(remove(possible_moves.begin(), possible_moves.end(),
-                                        critical_moves[0]), possible_moves.end());
-            possible_moves.insert(possible_moves.begin(), critical_moves[0]);
-            minimax(1);
-        } else {
-            minimax(0); // There are multiple critical_moves for the opponent, so trying to block them
-                        // is pointless. The only chance for the player is if they can get a 4-in-a-row
-                        // on this move.
-        }
+        rearrange_possible_moves(critical_moves);
+        minimax(critical_moves.size());
     } else {
         minimax(possible_moves.size());
     }

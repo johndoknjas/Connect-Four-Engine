@@ -1,38 +1,29 @@
-/* Version 58
+/* Version 59
 
-- Functional change for V.58:
-    - This version builds on V.57 with a few small tweaks in the analyze_last_move function.
-    - If there is only 1 critical move, then don't call the rearrange_possible_moves function;
-      instead, just shift this move into the first position in possible_moves.
-    - If there are > 1 critical moves, don't put any at the front of possible_moves, since blocking
-      one of the opponent's winning threats is futile (they have at least one other winning threat).
-      Instead, possible_moves is left as is, and in the minimax function 0 moves will be considered
-      seriously. They will all have a depth 0 search, and if the player gets lucky and wins on the spot,
-      then they're winning. Otherwise, the opponent will be winning.
-    - Note that the rearrange_possible_moves function has now been deleted.
+- Functional change for V.59:
+    - This version reverts back to the state of position.h just before the finishing touches were applied
+      to V.57. The code can be found in commit f626a8e15ff2d10c209b62db16bd6494a1be8854 of the Versus Sim
+      (with the three randomness lines commented out and the max_depth_limit changed to 9 of course). I'm
+      also making it the V.59 code in the Versus Sim now.
+    - So, V.59 is almost exactly as good as V.57, and only a little slower than V.58 (in range of 2 to 4
+      percent). It should be noted that these measurements are from the Versus Sim, where V.57 and V.58
+      performed fine. However, when I played against them, they weren't as superior to me as recent previous
+      versions.
+    - Since V.57 had issues against me, but this V.59 version did very well, a diff of V.59 and V.57's position.h
+      code reveals that putting the (depth == impossible_depth) condition check higher in analyze_last_move
+      (in an attempt to exit the function earlier) was the cause behind the engine playing worse against me.
+      However, why this was an issue against me and not an issue in the Versus Sim is still unknown.
 - Results:
-    - V.58 spent 0.0177904 seconds/move on average, while V.57 spent 0.0181811 seconds. Roughly
-      a 2.2% speed increase. All the trials were tied (each engine won 428 games total, drew 144).
+    - In a depth 9 match against V.56, V.59 spent 0.0186562 seconds/move on average, while V.56 spent
+      0.0228041 seconds. Speed increase of roughly 22.2%. All the trials were tied (433 games won each,
+      134 draws).
+    - Note that this Sim is from the aforementioned f626a8e15ff2d10c209b62db16bd6494a1be8854 commit
+      from the Versus Sim. Also, in the Version 57 commit of the Connect Four engine
+      (5cc4908f6503d752be5b6a27c8d96fc22aac8002), this match was mentioned in the notes - search for the phrase
+      "code very similar to V.57".
 
 
 ----------------------------------------------------------------------------
-
-
-- There seems to be some issue with a change in either V.58 or V.57. The ongoing score for me
-  against the engine (versions 52 to 56) was 105 comp wins, 10 wins for me, 7 draws (8.037 ratio - averages
-  somewhere in the 7s usually). But now after some games against V.58, the score is 12 comp wins, 5 wins for me,
-  1 draw (ratio of 2.27). Unless this is a major coincidence, something is wrong. And in two of my wins,
-  it was because the computer allowed me to get a 3-in-a-row D2 threat (when I favoured evens).
-    - Run a Versus Sim for V.58 against V.56, but with a time limit.
-    - If V.58 gets a better score, then there may be something wrong with main.cpp for the Connect Four
-      engine here.
-    - If V.58 does worse though, then for some reason it would do worse in a time limit match, even though
-      it's just faster in a depth limit match.
-    
-    - This Versus Sim is running now, should be done/almost done by tomorrow.
-    
-    - You could test playing against V.57 yourself (instead of V.58), and if it gets a high ratio,
-      then maybe just revert to V.57 and scrap V.58.
 
 -	Somehow, some squares amplifying 3-in-a-rows (and some 2-in-a-rows too I think) aren’t recorded. 
   This seems to be the case if such a threat is created in the root node. 
@@ -49,9 +40,6 @@
         should always evaluate to false. But somehow it is sometimes evaluating to true 
         (at some point in every game), where ‘C’ is winning and ‘U’ has a 3-in-a-row 
         (and was on the verge of winning with a critical_move).
-    
-    - Note that if you fix this issue, then in analyze_last_move, you won't need to call the
-      did_someone_win() function in the if statement with condition (depth == impossible_depth) anymore.
 
     - Also, I'm pretty sure this was an issue in previous versions, since if the early
       depth == impossible_depth check in analyze_last_move was causing this issue, the depth match
