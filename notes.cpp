@@ -57,6 +57,15 @@
 
 - Profile the code, using gprof (https://www.youtube.com/watch?v=re79V7hNiBY). Then try to optimize any functions which are taking a large percentage of the time.
 
+- Could try incorporating the V.58 idea. V.57 and V.58 did badly against you due to the early
+  conditional check in analyze_last_move for V.57. So, it's reasonable to assume that the changes V.58
+  added were not bad. Also, adding the V.58 idea on to the current version of the engine (V.59), should
+  work just as well as it did when added on to V.57.
+    - Adding the idea should yield a small speed increase in the Versus Sims.
+    - Also make sure the engine continues to play very strongly against you.
+      - It's possible that V.57 weakened the engine in games against you, and then V.58 somehow weakened it
+        even further. But if you play it and there's no problems then all good.
+
 - Consider storing a node's critical_moves vector in the TT, since this could save time by not having to
   call the find_critical_moves function for duplicate nodes.
       - Or, you could just store the number of critical moves, and also whether the player whose turn it is
