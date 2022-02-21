@@ -100,6 +100,39 @@
           up and the player hasn't won anywhere, they can just go to A2. Opponent goes to A3, player goes to
           A4, and the opponent's A4 threat has proved to be worthless.
 
+- For columns (or sections of columns) that can no longer impact the game, it seems like a waste of resources
+  to have the engine calculate different branches, some of which have pieces moving into some of these
+  columns' squares, and others not.
+    - One option is to avoid calculating at all in these columns, and just leave them empty (unless such
+      columns are the only option left, or if the opponent has something like a vertical 3 in a row in this
+      column).
+    - Another option is to just fill the column with 'C' and 'U' pieces, and then to have the engine
+      calculate as normal for the rest of the board.
+    
+    - The first option could be an issue when the engine is playing against a human, and it's losing, so
+      the goal is for it to put up a stiff resistance. Doing this often involves preferring moves that
+      don't do anything, but prolonge the game.
+    - The second option can be an issue for the inverse reason; i.e., if the computer is winning against
+      the user, it should try to finish the game quickly.
+    
+    - There are some other issues. E.g., for the second option, when would the pieces be placed into the
+      column? If it's all done in the second constructor (before the minimax stuff begins), then what
+      will the root position object's board look like? If it has the pieces in it after all the calculations
+      are done, then this could be an issue if assisting boards in main.cpp need to get the object's board.
+
+    - Also, if the first option is used, then if the opponent moves into one of these columns, the TT from
+      the engine's previous think won't be able to be used. Although this doesn't matter much, since
+      the current state of things will now be 2 ply deeper - most of the TT will be obsolete anyway.
+    
+    - If the second option is used, the engine shouldn't actually play into one of these columns for
+      the actual move it wants to play in the game (at least not always). E.g., there may be some
+      pressing matter to attend to elsewhere in the board.
+    
+    - For the second option, an even number of total moves should be made. I.e., the same number of 'C' and
+      'U' pieces should be placed.
+    
+    - Will this stuff impact the multithreading done (where the engine thinks while it's the user's turn?).
+
 - Consider storing a node's critical_moves vector in the TT, since this could save time by not having to
   call the find_critical_moves function for duplicate nodes.
       - Or, you could just store the number of critical moves, and also whether the player whose turn it is
