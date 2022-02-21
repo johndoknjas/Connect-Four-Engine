@@ -66,6 +66,40 @@
       - It's possible that V.57 weakened the engine in games against you, and then V.58 somehow weakened it
         even further. But if you play it and there's no problems then all good.
 
+- Value odd squares more than evens?
+   - For the player favouring odds, obviously odds are good, but they also give the player the option to
+     prefer evens. Say their square is on A3 - they move to A1, and now for the rest of the board, they
+     essentially become like the second player, whose even squares are powerful.
+   - Similarly, if the second player has an A3 square, then they could move to A1 and now have their
+     odd squares elsewhere in the board be more powerful. 
+   - And if the player wants to go back to preferring what they like by default (odds/evens),
+     they can just fill up the file with their odd threat. In the aforementioned A3 example, on the player's
+     turn they go to A2. Then, A3, A4, A5, A6 are left on the file, which is an even number and thus
+     can't be used to waste a move (unless the player or opponent has an additional threat further up
+     the A file).
+   
+   - Something interesting I noticed when playing against the engine is that if both players have two
+     winning threats on A3 and E3, this alone will give the second player the win. E.g., first player goes
+     to A1, second player goes to E1, leading to a zugzwang.
+      - This ties in with the idea that one of the second player's odd threats allows them to switch
+        to preferring their non-default type of square (so in this case even --> odd), enabling their
+        other odd threat to win the game.
+    
+   - There could be something to adding up the rank values of a player's threats. So for A3 and E3, this adds
+     up to an even value, and evens are what the second player prefers. Therefore, two odd threats are
+     comparable to having two even threats for the second player.
+      - For adding up threats' row values though, don't allow an additional threat to hurt a player.
+        E.g., if the second player has A3, E3, G3 threats, this would add up to an odd number, but obviously
+        the extra threat on G3 isn't detrimental.
+    
+    - Things aren't so clear if the opponent has a threat of their own near one of the player's threats.
+      E.g., for A3 and E3, if the opponent has a threat on A2, then the aforementioned usefulness of A3 is
+      essentially nil.
+        - If the opponent has an A4 threat, then maybe A3 is still useful, in the sense discussed above?
+          Since the player can go to A1, allowing them to prefer evens. Then, if the rest of the board fills
+          up and the player hasn't won anywhere, they can just go to A2. Opponent goes to A3, player goes to
+          A4, and the opponent's A4 threat has proved to be worthless.
+
 - Consider storing a node's critical_moves vector in the TT, since this could save time by not having to
   call the find_critical_moves function for duplicate nodes.
       - Or, you could just store the number of critical moves, and also whether the player whose turn it is
